@@ -21,3 +21,17 @@ dialog{width:min(460px,calc(100vw - 32px));padding:26px;background:var(--panel);
 .topbar{gap:20px}.library-nav{display:flex;gap:4px}.library-nav button{background:transparent;font-size:11px;border-color:transparent;padding:10px}.library-nav button[aria-pressed=true]{background:var(--soft);border-color:var(--line);color:var(--lilac)}#library-count{font-size:9px;margin-left:5px}#save-variant{border-color:var(--sky);color:var(--lilac)}.library-screen{max-width:1500px;margin:auto;padding:36px}.library-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.library-heading h1{margin-bottom:8px}.library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;margin:24px 0}.variant-card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}.variant-preview{display:block;padding:0;width:100%;border:0;border-radius:0;aspect-ratio:16/10;overflow:hidden}.variant-preview canvas{width:100%;height:100%}.variant-info{padding:16px}.variant-info h2{font-size:15px;font-weight:500;margin:0 0 8px;overflow-wrap:anywhere}.variant-info p{font-size:10px;line-height:1.6;color:var(--muted);margin:0 0 14px}.variant-actions{display:flex;gap:6px;flex-wrap:wrap}.variant-actions button{font-size:10px;padding:7px 9px}.library-empty{padding:70px 20px;text-align:center;color:var(--muted);line-height:1.8;border:1px dashed var(--line);border-radius:12px;margin-top:28px}#variant-name{width:100%;padding:12px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:7px}#variant-error{color:var(--warm);font-size:12px;line-height:1.6}#library-more{display:block;margin:20px auto}#library-trash[aria-pressed=true]{border-color:var(--sky);color:var(--lilac)}
 @media(max-width:850px){.topbar{height:auto;min-height:82px;flex-wrap:wrap;padding:14px 18px;gap:12px}.library-nav{order:3;width:100%}.library-nav button{flex:1}.export-actions{gap:5px}.export-actions>button{padding:9px 7px;font-size:10px}.export-actions button span{display:none}.library-screen{padding:24px 16px}}
 @media(max-width:460px){.topbar .brand{font-size:25px}.export-actions{flex-wrap:wrap;justify-content:flex-end;max-width:260px}.library-grid{grid-template-columns:1fr}}
+/* Keep desktop scrolling inside each pane, including at the end of the settings list. */
+@media(min-width:701px){
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  .topbar{flex-shrink:0}
+  main{flex:1;min-height:0;height:auto;overflow:hidden}
+  .workspace{min-height:0;overflow:auto;overscroll-behavior-y:contain}
+  .workspace>div{flex-shrink:0}
+  .canvas-wrap{flex:1 0 240px;min-height:240px}
+  .canvas-wrap>canvas{position:absolute;inset:0}
+  .panel{min-height:0}
+  .panel-heading,.panel-footer{flex-shrink:0}
+  .panel-scroll{flex:1;min-height:0;overscroll-behavior-y:contain}
+  .library-screen{flex:1;min-height:0;width:100%;margin:0 auto;overflow:auto;overscroll-behavior-y:contain}
+}

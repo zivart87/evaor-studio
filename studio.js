@@ -1,0 +1,542 @@
+'use strict';
+(() => {
+  const $ = id => document.getElementById(id);
+  const TAU = Math.PI * 2;
+  const defaults = { trajectory:'base', growthTurns:.5, growthSpread:35, growthRotation:'cw', spiralWidth:3, spiralTurns:3, spiralPhase:25, model:'halo', rotation:'cw', tailLength:260, dispersion:35, tailFade:.65, vortexOpacity:90, count:1800, radius:27, thickness:4, size:1.2, asymmetry:8, direction:'out', source:'band', speed:0.65, life:4, travel:11, swirl:10, trails:true, trail:16, glow:25, color:'#e0ede6', colorEnd:'#e0ede6', background:'#000000', transparent:true, pointX:0, pointY:0, raysEnabled:false, rayCount:140, raySpread:35, rayVariation:60, contourDensity:0, sizeEnd:100, opacityStart:100, opacityEnd:100, colorCurve:1, fadeCurve:1 };
+  const specs = {
+    plasmaGeometry:[['plasmaCount','Количество лучей',12,160,1,''],['plasmaWidth','Толщина лучей',.4,3,.1,'px']],
+    plasmaMotion:[['plasmaSpin','Скорость вращения',0,3,.05,'×'],['plasmaTilt','Наклон оси',0,90,1,'°'],['plasmaPulse','Сила мерцания',0,100,1,'%'],['plasmaFlickerRate','Частота мерцания',0,15,.5,'Гц'],['plasmaTurbulence','Изгибы разрядов',0,100,1,'%']],
+    plasmaFlow:[['plasmaFlowSpeed','Скорость импульсов',0,3,.05,'×'],['plasmaPacketLength','Длина импульса',5,60,1,'%'],['plasmaBaseLight','Постоянное свечение лучей',0,100,1,'%']],
+    plasmaLight:[['plasmaRim','Яркость ободка',0,100,1,'%'],['plasmaCore','Яркость центра',0,100,1,'%'],['plasmaCoreSize','Размер свечения центра',1,15,.5,'%']],
+    geometry:[['count','Количество частиц',100,50000,100,''],['radius','Радиус внутреннего пространства',5,36,1,'%'],['thickness','Толщина кольца',1,18,.5,'%'],['size','Начальный размер частицы',.4,4,.1,'px'],['asymmetry','Асимметрия',0,100,1,'%']],
+    growth:[['growthTurns','Число оборотов',.1,4,.1,''],['growthSpread','Разброс траекторий',0,100,1,'%']],
+    spiral:[['spiralWidth','Ширина спирали',0,12,.25,'%'],['spiralTurns','Количество витков',1,8,.25,''],['spiralPhase','Разброс фаз',0,100,1,'%']],
+    motion:[['speed','Скорость',0,3,.05,'×'],['life','Время жизни',1,10,.5,'с'],['travel','Дальность полёта',0,25,.5,'%'],['swirl','Закручивание',-100,100,1,'%']],
+    light:[['trail','Длина следа',0,70,1,'%'],['glow','Свечение',0,100,1,'%']],
+    vortex:[['tailLength','Длина хвостов',90,320,1,'°'],['dispersion','Рассеивание хвостов',0,100,1,'%'],['tailFade','Мягкость затухания',.25,3,.05,'×'],['vortexOpacity','Непрозрачность потоков',0,100,1,'%']],
+    point:[['pointX','Точка появления · X',-40,40,1,'%'],['pointY','Точка появления · Y',-40,40,1,'%']],
+    density:[['contourDensity','Плотность у источника',0,100,1,'%']],
+    ray:[['rayCount','Количество лучей',12,360,1,''],['raySpread','Разброс внутри луча',0,100,1,'%'],['rayVariation','Неравномерность длины',0,100,1,'%']],
+    lifecycle:[['sizeEnd','Размер в конце',0,150,1,'%'],['opacityStart','Непрозрачность при рождении',0,100,1,'%'],['opacityEnd','Непрозрачность при затухании',0,100,1,'%'],['colorCurve','Кривая перехода цвета',.25,3,.05,'×'],['fadeCurve','Кривая непрозрачности',.25,3,.05,'×']]
+  };
+  const ranges = Object.values(specs).flat();
+  Object.assign(defaults,{plasmaCount:64,plasmaWidth:1.8,plasmaSpin:.75,plasmaTilt:28,plasmaPulse:65,plasmaTurbulence:25,plasmaRim:90,plasmaCore:85,plasmaCoreSize:7,plasmaRotation:'cw',plasmaRimColor:'#ff43d3',plasmaCoreColor:'#ff8ae8'});
+  Object.assign(defaults,{plasmaFlow:'out',plasmaFlowSpeed:.8,plasmaPacketLength:25,plasmaBaseLight:12,plasmaFlickerRate:7});
+  const presets = {
+    plasma:{...defaults,model:'plasma',radius:35,speed:.7,glow:90,color:'#6557ff',colorEnd:'#83c4ff',trails:false},
+    halo:{...defaults},
+    dust:{...defaults,model:'dust',count:3500,size:.8,thickness:7,asymmetry:20,travel:17,trails:false,glow:10,speed:.35,direction:'both',swirl:4},
+    rays:{...defaults,model:'rays',count:1400,size:.8,thickness:1.5,trail:58,glow:40,travel:20,speed:.8,swirl:0,asymmetry:4,color:'#ffc578',colorEnd:'#ffc578',source:'inner'},
+    vortex:{...defaults,model:'vortex',count:32000,radius:20,thickness:14,size:1.5,asymmetry:8,speed:.55,trails:false,glow:0,color:'#7055eb',colorEnd:'#e84a55'},
+    corona:{...defaults,model:'corona',count:6000,radius:24,thickness:1,size:1.9,asymmetry:0,source:'contour',speed:.45,life:5,travel:25,swirl:0,trails:false,glow:60,color:'#fff477',colorEnd:'#ff3800',raysEnabled:true,rayCount:160,raySpread:35,rayVariation:65,contourDensity:35,sizeEnd:15,opacityStart:100,opacityEnd:5,colorCurve:.4,fadeCurve:1.8}
+  };
+  function validate(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid settings');
+    const next = {...defaults};
+    if(Object.hasOwn(presets,raw.model)) next.model=raw.model;
+    if(['cw','ccw'].includes(raw.rotation)) next.rotation=raw.rotation;
+    if(['cw','ccw'].includes(raw.plasmaRotation)) next.plasmaRotation=raw.plasmaRotation;
+    if(['out','in','both','off'].includes(raw.plasmaFlow))next.plasmaFlow=raw.plasmaFlow;
+    if(['base','spiral','growing'].includes(raw.trajectory)) next.trajectory=raw.trajectory;
+    if(['cw','ccw'].includes(raw.growthRotation))next.growthRotation=raw.growthRotation;
+    for (const [key,,min,max] of ranges) if (typeof raw[key] === 'number' && Number.isFinite(raw[key])) next[key] = Math.max(min,Math.min(max,raw[key]));
+    next.count = Math.min(next.model==='vortex'?50000:6000,Math.round(next.count));
+    next.rayCount = Math.round(next.rayCount);
+    next.plasmaCount = Math.round(next.plasmaCount);
+    for (const key of ['trails','transparent','raysEnabled']) if (typeof raw[key] === 'boolean') next[key] = raw[key];
+    for (const key of ['color','colorEnd','background','plasmaRimColor','plasmaCoreColor']) if (typeof raw[key] === 'string' && /^#[\da-f]{6}$/i.test(raw[key])) next[key] = raw[key];
+    if (!Object.hasOwn(raw,'colorEnd')) next.colorEnd=next.color; // Version 1 single-colour presets.
+    if (['in','out','both'].includes(raw.direction)) next.direction = raw.direction;
+    if (['band','inner','outer','point','contour'].includes(raw.source)) next.source = raw.source;
+    return next;
+  }
+  let state = {...defaults};
+  let viewMode='animation';
+  try{if(localStorage.getItem('evaor-preview-v1')==='logo')viewMode='logo';}catch{}
+  let logoWeight=400;
+  try{const saved=Number(localStorage.getItem('evaor-logo-weight-v1'));if([300,400,500,600,700].includes(saved))logoWeight=saved;}catch{}
+  let logoLayout={oScale:100,spacing:0};
+  try{
+    const saved=JSON.parse(localStorage.getItem('evaor-logo-layout-v1')||'{}');
+    if(Number.isFinite(saved.oScale))logoLayout.oScale=Math.max(25,Math.min(200,saved.oScale));
+    if(Number.isFinite(saved.spacing))logoLayout.spacing=Math.max(-10,Math.min(30,saved.spacing));
+  }catch{}
+  try {
+    const saved=localStorage.getItem('evaor-studio-v1');
+    if(saved){
+      const previous=JSON.parse(saved);
+      if(previous.model==='vortex'){
+        const storedDrafts=JSON.parse(localStorage.getItem('evaor-model-drafts-v1')||'{}');
+        state=validate({...storedDrafts.halo,model:'halo'});
+      }else state=validate(previous);
+    }
+    // Replace the former default once; keep custom backgrounds and imported presets intact.
+    if(!localStorage.getItem('evaor-black-background-v1')){
+      if(state.background.toLowerCase()==='#080d0c'){
+        state.background='#000000';
+        localStorage.setItem('evaor-studio-v1',JSON.stringify(state));
+      }
+      localStorage.setItem('evaor-black-background-v1','1');
+    }
+  } catch {}
+  const modelNames={halo:'Световое кольцо',dust:'Звёздная пыль',rays:'Лучи',vortex:'Цветовой вихрь',corona:'Солнечная корона',plasma:'Плазменная сфера'};
+  let drafts={};
+  try {const saved=JSON.parse(localStorage.getItem('evaor-model-drafts-v1')||'{}');for(const key of Object.keys(presets))if(saved[key])drafts[key]=validate({...saved[key],model:key});} catch {}
+  let particles=[], time=0, paused=matchMedia('(prefers-reduced-motion: reduce)').matches, last=0, boost=0, hovered=false, pressed=false, focused=false, toastTimer;
+  const canvas=$('canvas'), ctx=canvas.getContext('2d', {alpha:true});
+  let width=1,height=1,dpr=1;
+  let logoFontReady=false;
+  for (const [group,items] of Object.entries(specs)) {
+    for (const [key,label,min,max,step,unit] of items) {
+      const el=document.createElement('div');el.className='control';
+      el.innerHTML=`<div class="control-label"><label for="${key}">${label}</label><output id="${key}-value" for="${key}"></output></div><input id="${key}" type="range" min="${min}" max="${max}" step="${step}">`;
+      $(group+'-controls').append(el);
+      $(key).addEventListener('input',()=>{state[key]=Number($(key).value); if(key==='count') seed(); changed();});
+    }
+  }
+  function notice(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3000);}
+  function persist(){drafts[state.model]={...state};try{localStorage.setItem('evaor-studio-v1',JSON.stringify(state));localStorage.setItem('evaor-model-drafts-v1',JSON.stringify(drafts));}catch{notice('Автосохранение недоступно. Сохрани вариант в JSON.');}}
+  function showControl(key,visible){$(key).closest('.control').hidden=!visible;}
+  function updateUI(){
+    const vortex=state.model==='vortex';
+    $('count').max=vortex?50000:6000;
+    for(const [key,,min,,,unit] of ranges){$(key).value=state[key];$(key).style.setProperty('--progress',`${(state[key]-min)/(Number($(key).max)-min)*100}%`);$(key+'-value').value=Number(state[key].toFixed(2)).toLocaleString('ru-RU')+(unit?' '+unit:'');}
+    $('model-title').textContent=modelNames[state.model];
+    $('rotation').value=state.rotation;
+    $('trajectory').value=state.trajectory;
+    $('growthRotation').value=state.growthRotation;
+    $('growth-options').hidden=vortex||state.trajectory!=='growing';
+    $('trajectory-options').hidden=vortex;
+    $('spiral-options').hidden=vortex||state.trajectory!=='spiral';
+    $('radial-options').hidden=vortex;
+    $('vortex-options').hidden=!vortex;
+    for(const key of ['life','travel','swirl'])showControl(key,!vortex);
+    showControl('swirl',!vortex&&state.trajectory!=='growing');
+    showControl('travel',!vortex&&!(state.trajectory==='growing'&&state.source==='point'&&state.direction==='in'));
+    $('density-controls').hidden=vortex;
+    $('raysEnabled').closest('label').hidden=vortex;
+    $('trails').closest('label').hidden=vortex;
+    $('lifecycle-controls').hidden=vortex;
+    $('lifecycle-hint').hidden=vortex;
+    $('color-preview').hidden=vortex;
+    $('gradient-labels').hidden=vortex;
+    $('color-title').textContent=vortex?'Цвета потоков':'Рождение и затухание';
+    document.querySelector('label[for="color"]').textContent=vortex?'Цвет первого потока':'Цвет при рождении';
+    document.querySelector('label[for="colorEnd"]').textContent=vortex?'Цвет второго потока':'Цвет при затухании';
+    document.querySelector('label[for="size"]').textContent=vortex?'Размер зерна':'Начальный размер частицы';
+    for(const key of ['source','color','colorEnd','background']) $(key).value=state[key];
+    for(const key of ['trails','transparent','raysEnabled']) $(key).checked=state[key];
+    $('trail').disabled=!state.trails;
+    showControl('trail',!vortex&&state.trails);
+    $('point-controls').hidden=vortex||state.source!=='point';
+    $('ray-controls').hidden=vortex||!state.raysEnabled;
+    $('ray-hint').hidden=vortex||!state.raysEnabled;
+    const thickness=vortex||['band','outer','point'].includes(state.source);
+    $('thickness').disabled=!thickness;
+    showControl('thickness',thickness);
+    const stops=Array.from({length:11},(_,i)=>{const age=i/10;const u=Math.pow(age,state.colorCurve);const a=state.color.slice(1).match(/../g).map(x=>parseInt(x,16));const b=state.colorEnd.slice(1).match(/../g).map(x=>parseInt(x,16));const c=a.map((v,j)=>Math.round(v+(b[j]-v)*u));const opacity=(state.opacityStart+(state.opacityEnd-state.opacityStart)*Math.pow(age,state.fadeCurve))/100;return `rgba(${c.join(',')},${opacity}) ${i*10}%`;});
+    $('color-gradient').style.background=`linear-gradient(to right,${stops.join(',')})`;
+    document.querySelectorAll('[data-direction]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.direction===state.direction)));
+    document.querySelectorAll('[data-preset]').forEach(el=>{const active=state.model===el.dataset.preset;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
+    $('canvas-wrap').style.backgroundColor=state.background;
+    $('stats').textContent=state.count.toLocaleString('ru-RU')+' частиц';
+    const plasma=state.model==='plasma';
+    for(const id of ['plasmaGeometry-controls','plasma-options','plasma-colors','plasmaLight-controls'])$(id).hidden=!plasma;
+    for(const key of ['count','size','asymmetry'])showControl(key,!plasma);
+    document.querySelector('label[for="radius"]').textContent=plasma?'Радиус сферы':'Радиус внутреннего пространства';
+    $('motion-title').textContent=plasma?'Вращение и разряды':'Движение частиц';
+    $('light-title').textContent=plasma?'Свечение сферы':'Свет и след';
+    $('plasmaRotation').value=state.plasmaRotation;
+    $('plasmaFlow').value=state.plasmaFlow;
+    $('plasmaFlow-controls').hidden=!plasma||state.plasmaFlow==='off';
+    for(const key of ['plasmaCoreColor','plasmaRimColor'])$(key).value=state[key];
+    if(plasma){
+      for(const id of ['radial-options','trajectory-options','spiral-options','growth-options','density-controls','point-controls','ray-controls','ray-hint','lifecycle-controls','lifecycle-hint','color-preview','gradient-labels'])$(id).hidden=true;
+      for(const key of ['thickness','life','travel','swirl','trail'])showControl(key,false);
+      for(const id of ['raysEnabled','trails'])$(id).closest('label').hidden=true;
+      $('color-title').textContent='Цвета сферы';
+      document.querySelector('label[for="color"]').textContent='Лучи у центра';
+      document.querySelector('label[for="colorEnd"]').textContent='Лучи у поверхности';
+      $('stats').textContent=state.plasmaCount+' лучей · объёмное вращение';
+    }
+    canvas.setAttribute('aria-label',plasma?'Вращающаяся плазменная сфера со световыми лучами':'Анимированная буква O из частиц');
+    updateViewUI();
+    $('pause').textContent=paused?'▶ Воспроизвести':'Ⅱ Пауза';$('pause').setAttribute('aria-pressed',String(paused));$('live-label').textContent=paused?'ПАУЗА':'АНИМАЦИЯ';
+  }
+  function changed(){updateUI();persist();draw();}
+  function makeParticles(count){
+    let s=71023;const random=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};
+    return Array.from({length:count},(_,i)=>({angle:i*2.399963229728653,offset:random(),band:random(),jitter:random(),size:.45+random()*.9,sign:i%2?1:-1}));
+  }
+  function seed(){particles=makeParticles(state.count);}
+  function updateViewUI(){
+    document.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.view===viewMode)));
+    $('preview-hint').textContent=viewMode==='logo'?(logoFontReady?'EvaOr · Montserrat · анимация вместо O':'Загрузка Montserrat…'):'Отдельная форма света';
+    $('export').disabled=$('export-video').disabled=viewMode==='logo'&&!logoFontReady;
+    $('save-variant').disabled=viewMode==='logo'&&!logoFontReady;
+    $('logo-type-options').hidden=viewMode!=='logo';
+    $('logo-weight').value=String(logoWeight);
+    for(const [id,key] of [['logo-o-scale','oScale'],['logo-spacing','spacing']]){
+      const el=$(id);el.value=logoLayout[key];
+      el.style.setProperty('--progress',`${(logoLayout[key]-Number(el.min))/(Number(el.max)-Number(el.min))*100}%`);
+      $(id+'-value').value=logoLayout[key]+' %';
+    }
+    $('canvas-caption').textContent=viewMode==='logo'?'EVAOR / ПРИМЕРКА ЛОГОТИПА':'O / ИССЛЕДОВАНИЕ ФОРМЫ';
+    if(viewMode==='logo')canvas.setAttribute('aria-label','Логотип EvaOr: буква O заменена текущей анимацией');
+  }
+  document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>{
+    viewMode=el.dataset.view;
+    try{localStorage.setItem('evaor-preview-v1',viewMode);}catch{}
+    updateUI();draw();
+  }));
+  $('logo-weight').addEventListener('input',()=>{
+    const selected=Number($('logo-weight').value);if(![300,400,500,600,700].includes(selected))return;
+    logoWeight=selected;try{localStorage.setItem('evaor-logo-weight-v1',String(logoWeight));}catch{}
+    draw();
+  });
+  for(const [id,key] of [['logo-o-scale','oScale'],['logo-spacing','spacing']])$(id).addEventListener('input',()=>{
+    logoLayout[key]=Number($(id).value);
+    try{localStorage.setItem('evaor-logo-layout-v1',JSON.stringify(logoLayout));}catch{}
+    updateViewUI();draw();
+  });
+  function render(target,w,h){renderScene(target,w,h,state,particles,time,boost,viewMode);}
+  function renderScene(target,w,h,state,particles,time,boost,view='animation',weight=logoWeight,layout=logoLayout){
+    target.clearRect(0,0,w,h);
+    if(view==='logo'){renderLogo(target,w,h,state,particles,time,boost,weight,layout);return;}
+    renderArtwork(target,w,h,state,particles,time,boost);
+  }
+  function renderLogo(target,w,h,state,particles,time,boost,weight,layout){
+    target.save();
+    // Measure a capital E so the luminous O shares the cap height and baseline.
+    let fontSize=Math.min(w*.23,h*.42);
+    const font=size=>`${weight} ${size}px "EvaOr Montserrat", sans-serif`;
+    target.font=font(fontSize);
+    const cap=target.measureText('E').actualBoundingBoxAscent||fontSize*.72;
+    const tracking=fontSize*layout.spacing/100;
+    // Preserve Montserrat's kerning, then add tracking to each of the four gaps.
+    const vX=target.measureText('Ev').width-target.measureText('v').width+tracking;
+    const aX=target.measureText('Eva').width-target.measureText('a').width+tracking*2;
+    const left=target.measureText('Eva').width+tracking*2,right=target.measureText('r').width;
+    const band=['band','outer','point'].includes(state.source)&&state.model!=='plasma'?state.thickness*.5:0;
+    const contour=Math.max(5,state.radius+band);
+    const outward=state.model!=='plasma'&&state.direction!=='in'?state.travel:0;
+    // Keep EvaOr a single word; outer particles may spill softly over adjacent letters.
+    const spread=Math.min(2.2,1+outward/contour),slot=cap*layout.oScale/100;
+    const gap=fontSize*.025+tracking,total=left+gap*2+slot+right;
+    const fit=Math.min(1,w*.82/total,h*.65/Math.max(cap,slot*spread));
+    target.translate((w-total*fit)/2,(h-cap*fit)/2);
+    target.scale(fit,fit);target.font=font(fontSize);target.textBaseline='alphabetic';
+    const bg=state.background.slice(1).match(/../g).map(v=>parseInt(v,16));
+    target.fillStyle=bg[0]*.2126+bg[1]*.7152+bg[2]*.0722>160?'#101014':'#fcfcfc';
+    target.fillText('E',0,cap);target.fillText('v',vX,cap);target.fillText('a',aX,cap);target.fillText('r',left+gap*2+slot,cap);
+    const box=650,artScale=slot/(box*.88*contour/100*2);
+    target.translate(left+gap+slot/2,cap/2);target.scale(artScale,artScale);target.translate(-box/2,-box/2);
+    renderArtwork(target,box,box,state,particles,time,boost);
+    target.restore();
+  }
+  function renderArtwork(target,w,h,state,particles,time,boost){
+    if(state.model==='plasma'){renderPlasma(target,w,h,state,time,boost);return;}
+    const extent=Math.min(w,h)*.88;
+    const scale=extent/650;
+    const model=EvaOrParticles.createModel(state,boost,time);
+    target.save();target.translate(w/2,h/2);
+    target.lineCap='round';
+    for(const p of particles){
+      const age=(p.offset+time/state.life)%1;
+      const at=model.position(p,age,extent);
+      const {radius,alpha:fade,rgb}=model.appearance(p,age,scale);
+      if(state.model!=='vortex' && state.trails && state.trail>0){
+        const length=state.trail/100*.55;
+        const pathTurns=state.trajectory==='growing'?state.growthTurns*1.3:state.trajectory==='spiral'&&state.spiralWidth>0?state.spiralTurns:0;
+        const steps=Math.max(6,Math.ceil(length*pathTurns*20));
+        for(let j=steps;j>0;j--){
+          const a=age-length*j/steps,bb=age-length*(j-1)/steps;
+          if(bb<=0)continue;
+          const start=model.position(p,Math.max(0,a),extent),end=model.position(p,bb,extent);
+          const past=model.appearance(p,Math.max(0,(a+bb)/2),scale);
+          target.strokeStyle=`rgba(${past.rgb},${past.alpha*fade*(1-j/(steps+1))*.4})`;target.lineWidth=Math.max(.3*scale,past.radius*.7);
+          target.beginPath();target.moveTo(start.x,start.y);target.lineTo(end.x,end.y);target.stroke();
+        }
+      }
+      if(state.glow>0){
+        target.fillStyle=`rgba(${rgb},${fade*state.glow/100*.07})`;target.beginPath();target.arc(at.x,at.y,radius*(3+state.glow/25),0,TAU);target.fill();
+        target.fillStyle=`rgba(${rgb},${fade*state.glow/100*.15})`;target.beginPath();target.arc(at.x,at.y,radius*2.2,0,TAU);target.fill();
+      }
+      target.fillStyle=`rgba(${rgb},${fade})`;target.beginPath();target.arc(at.x,at.y,radius,0,TAU);target.fill();
+    }
+    target.restore();
+  }
+  function renderPlasma(target,w,h,state,time,boost){
+    const extent=Math.min(w,h)*.88,scale=extent/650;
+    const scene=EvaOrParticles.createPlasmaScene(state,time,boost,extent);
+    const R=scene.radius,glow=state.glow/100;
+    const rgba=(hex,alpha)=>`rgba(${hex.slice(1).match(/../g).map(v=>parseInt(v,16)).join(',')},${Math.max(0,Math.min(1,alpha))})`;
+    function light(x,y,r,color,alpha){
+      if(r<=0||alpha<=0)return;
+      const gradient=target.createRadialGradient(x,y,0,x,y,r);
+      gradient.addColorStop(0,rgba(color,alpha));gradient.addColorStop(.18,rgba(color,alpha*.55));gradient.addColorStop(.5,rgba(color,alpha*.16));gradient.addColorStop(1,rgba(color,0));
+      target.fillStyle=gradient;target.beginPath();target.arc(x,y,r,0,TAU);target.fill();
+    }
+    target.save();target.translate(w/2,h/2);target.globalCompositeOperation='lighter';target.lineCap='round';target.lineJoin='round';
+    const rim=state.plasmaRim/100*scene.pulse;
+    if(rim>0){
+      const halo=target.createRadialGradient(0,0,R*.86,0,0,R*1.13);
+      for(const [stop,alpha] of [[0,0],[.25,.06*glow],[.44,.3*glow],[.51,.85],[.55,.5],[.68,.13*glow],[1,0]])halo.addColorStop(stop,rgba(state.plasmaRimColor,alpha*rim));
+      target.fillStyle=halo;target.beginPath();target.arc(0,0,R*1.13,0,TAU);target.fill();
+      // Separate luminous patches travel around a stable circular silhouette.
+      for(let i=0;i<80;i++){
+        const a=i/80*TAU;
+        const strength=.3+.7*Math.pow((1+Math.sin(a*5-scene.spin*1.6+Math.sin(a*3+scene.spin*.4)))/2,2);
+        target.strokeStyle=rgba(state.plasmaRimColor,rim*strength*.65);target.lineWidth=(1.3+glow)*scale;
+        target.beginPath();target.arc(0,0,R,a,a+TAU/80+.002);target.stroke();
+      }
+    }
+    for(const ray of scene.rays){
+      const length=Math.hypot(ray.x,ray.y);
+      if(length<.01)continue;
+      const gradient=target.createLinearGradient(0,0,ray.x,ray.y);
+      gradient.addColorStop(0,rgba(state.color,0));
+      gradient.addColorStop(.09,rgba(state.color,.4));
+      gradient.addColorStop(.6,rgba(state.color,.65));
+      gradient.addColorStop(1,rgba(state.colorEnd,1));
+      const line=state.plasmaWidth*scale*(.55+ray.depth*.8);
+      target.strokeStyle=gradient;
+      const path=()=>{target.beginPath();ray.points.forEach((p,i)=>i?target.lineTo(p.x,p.y):target.moveTo(p.x,p.y));target.stroke();};
+      const steady=ray.impulse?state.plasmaBaseLight/100:1;
+      // Wide, faint passes surround a crisp filament, with no persistent frame blur.
+      if(glow>0){target.globalAlpha=ray.alpha*steady*glow*.09;target.lineWidth=line*11;path();target.globalAlpha=ray.alpha*steady*glow*.22;target.lineWidth=line*4.5;path();}
+      target.globalAlpha=ray.alpha*steady*.85;target.lineWidth=line;path();target.globalAlpha=1;
+      let tip=steady;
+      if(ray.impulse){
+        const packet=ray.impulse;
+        const at=u=>{const t=Math.max(0,Math.min(1,u))*(ray.points.length-1),j=Math.min(ray.points.length-2,Math.floor(t)),f=t-j;return {x:ray.points[j].x+(ray.points[j+1].x-ray.points[j].x)*f,y:ray.points[j].y+(ray.points[j+1].y-ray.points[j].y)*f};};
+        // The bright head advances along the curved filament; its tail stays behind it.
+        for(let k=11;k>=0;k--){
+          const u0=packet.head-packet.sign*packet.length*(k+1)/12,u1=packet.head-packet.sign*packet.length*k/12;
+          if(Math.max(u0,u1)<0||Math.min(u0,u1)>1)continue;
+          const a=at(u0),b=at(u1),strength=ray.alpha*packet.fade*Math.pow(1-k/12,1.5);
+          target.beginPath();target.moveTo(a.x,a.y);target.lineTo(b.x,b.y);
+          if(glow>0){target.globalAlpha=strength*glow*.22;target.lineWidth=line*7;target.stroke();}
+          target.globalAlpha=strength;target.lineWidth=line*1.8;target.stroke();
+        }
+        target.globalAlpha=1;
+        const head=at(packet.head),headColor=packet.head>.6?state.colorEnd:state.color;
+        light(head.x,head.y,(4+glow*10)*scale,headColor,ray.alpha*packet.fade);
+        target.fillStyle=rgba('#ffffff',ray.alpha*packet.fade*.8);target.beginPath();target.arc(head.x,head.y,line*.8,0,TAU);target.fill();
+        tip=Math.max(steady,packet.fade*Math.max(0,1-Math.abs(1-packet.head)/.12));
+      }
+      light(ray.x,ray.y,(4+glow*13)*scale*(.65+ray.depth),state.colorEnd,ray.alpha*tip*(.2+glow*.6));
+      target.fillStyle=rgba(state.colorEnd,ray.alpha*tip*.8);target.beginPath();target.arc(ray.x,ray.y,line*.85,0,TAU);target.fill();
+      if(length>R*.92)light(ray.x,ray.y,extent*.035,state.plasmaRimColor,ray.alpha*tip*rim*glow*.45);
+    }
+    const core=state.plasmaCore/100*scene.pulse;
+    light(0,0,extent*state.plasmaCoreSize/100,state.plasmaCoreColor,core*(.35+glow*.65));
+    light(0,0,(2.5+state.plasmaCoreSize)*scale,state.plasmaCoreColor,core*.8);
+    light(0,0,2.5*scale,'#ffffff',core*.65);
+    target.restore();
+  }
+  function draw(){ctx.setTransform(dpr,0,0,dpr,0,0);render(ctx,width,height);}
+  function resize(){const box=$('canvas-wrap').getBoundingClientRect();if(box.width<=2||box.height<=2)return;width=box.width-2;height=box.height-2;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);draw();}
+  document.querySelectorAll('[data-direction]').forEach(el=>el.addEventListener('click',()=>{state.direction=el.dataset.direction;changed();}));
+  document.querySelectorAll('[data-preset]').forEach(el=>el.addEventListener('click',()=>{persist();state={...(drafts[el.dataset.preset]||presets[el.dataset.preset])};time=0;boost=0;seed();changed();$('panel-scroll')?.scrollTo(0,0);}));
+  for(const key of ['source','color','colorEnd','background','trails','transparent','raysEnabled','rotation','trajectory','growthRotation','plasmaRotation','plasmaFlow','plasmaCoreColor','plasmaRimColor']) $(key).addEventListener('input',()=>{state[key]=$(key).type==='checkbox'?$(key).checked:$(key).value;changed();});
+  $('pause').addEventListener('click',()=>{paused=!paused;updateUI();});
+  $('restart').addEventListener('click',()=>{time=0;boost=0;draw();});
+  $('reset').addEventListener('click',()=>{state={...presets[state.model]};time=0;boost=0;seed();changed();notice('Настройки этой модели восстановлены');});
+  const react=$('react');
+  react.addEventListener('pointerenter',()=>hovered=true);react.addEventListener('pointerleave',()=>{hovered=false;pressed=false;});react.addEventListener('pointerdown',()=>pressed=true);window.addEventListener('pointerup',()=>pressed=false);react.addEventListener('pointercancel',()=>pressed=false);react.addEventListener('focus',()=>focused=true);react.addEventListener('blur',()=>{focused=false;pressed=false;});
+  react.addEventListener('keydown',event=>{if(event.key===' '||event.key==='Enter')pressed=true;});react.addEventListener('keyup',()=>pressed=false);
+  react.addEventListener('click',()=>{if(paused)notice('Включи воспроизведение, чтобы увидеть реакцию');});
+  function download(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
+  function captureVariant(){return {version:4,settings:{...state},composition:{view:viewMode,weight:logoWeight,layout:{...logoLayout}},playback:{time,paused}};}
+  function normaliseVariant(raw){
+    if(!raw||![1,2,3,4].includes(raw.version)||!raw.settings||!ranges.some(([key])=>Object.hasOwn(raw.settings,key)))throw new Error('Неверный формат варианта.');
+    if(raw.settings.model==='vortex')throw new Error('Модель «Цветовой вихрь» временно убрана.');
+    const composition=raw.composition||{},layout=composition.layout||{},playback=raw.playback||{};
+    return {version:4,settings:validate(raw.settings),composition:{
+      view:composition.view==='logo'?'logo':'animation',weight:[300,400,500,600,700].includes(composition.weight)?composition.weight:400,
+      layout:{oScale:Number.isFinite(layout.oScale)?Math.max(25,Math.min(200,layout.oScale)):100,spacing:Number.isFinite(layout.spacing)?Math.max(-10,Math.min(30,layout.spacing)):0}
+    },playback:{time:Number.isFinite(playback.time)?Math.max(0,Math.min(1e9,playback.time)):0,paused:typeof playback.paused==='boolean'?playback.paused:paused}};
+  }
+  function openVariant(raw){
+    const next=normaliseVariant(raw);persist();state=next.settings;
+    // Old JSON files only contained animation settings; retain the current typography.
+    if(raw.version===4){viewMode=next.composition.view;logoWeight=next.composition.weight;logoLayout={...next.composition.layout};}
+    time=next.playback.time;paused=next.playback.paused;boost=0;last=0;seed();changed();
+    try{localStorage.setItem('evaor-preview-v1',viewMode);localStorage.setItem('evaor-logo-weight-v1',String(logoWeight));localStorage.setItem('evaor-logo-layout-v1',JSON.stringify(logoLayout));}catch{}
+  }
+  function exportVariant(snapshot){download(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),'evaor-preset.json');}
+  $('save').addEventListener('click',()=>{exportVariant(captureVariant());notice('Вариант с композицией сохранён в JSON');});
+  $('load').addEventListener('click',()=>$('file-input').click());
+  $('file-input').addEventListener('change',async event=>{
+    const file=event.target.files[0];if(!file)return;
+    try{if(file.size>100000)throw new Error('Too large');openVariant(JSON.parse(await file.text()));notice('Вариант открыт');}catch{notice('Не удалось открыть. Выбери JSON действующей модели, сохранённый в студии.');}
+    event.target.value='';
+  });
+  $('export').addEventListener('click',()=>{
+    const output=document.createElement('canvas');output.width=output.height=2048;const out=output.getContext('2d');render(out,2048,2048);
+    if(!state.transparent){out.globalCompositeOperation='destination-over';out.fillStyle=state.background;out.fillRect(0,0,2048,2048);}
+    output.toBlob(blob=>{if(blob){download(blob,'evaor-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png');notice('PNG 2048 × 2048 сохранён');}else notice('Не удалось создать PNG');},'image/png');
+  });
+  const libraryKey='evaor-library-v1';
+  let libraryOpen=false,trashOpen=false,libraryLimit=12,libraryPaint=0,pendingVariant=null;
+  function readLibrary(){
+    const raw=JSON.parse(localStorage.getItem(libraryKey)||'{"items":[]}');
+    if(!raw||!Array.isArray(raw.items))throw new Error('Не удалось прочитать коллекцию. Данные не изменены.');
+    return raw.items;
+  }
+  function updateLibraryCount(){try{$('library-count').textContent=readLibrary().filter(x=>!x.deletedAt).length;}catch{$('library-count').textContent='!';}}
+  function changeLibrary(change){
+    const items=readLibrary();change(items);
+    // Store compact settings only; thumbnails are rendered on demand, not kept in storage.
+    localStorage.setItem(libraryKey,JSON.stringify({version:1,items}));
+    updateLibraryCount();if(libraryOpen)renderLibrary();
+  }
+  function showLibrary(show){
+    libraryOpen=show;last=0;libraryPaint++;
+    $('editor-screen').hidden=show;$('library-screen').hidden=!show;
+    $('editor-tab').setAttribute('aria-pressed',String(!show));$('library-tab').setAttribute('aria-pressed',String(show));
+    for(const id of ['export','export-video','save-variant'])$(id).hidden=show;
+    if(show){libraryLimit=12;renderLibrary();}else{requestAnimationFrame(resize);}
+  }
+  function variantNameDialog(record=null){
+    pendingVariant=record?{id:record.id}:{snapshot:captureVariant()};
+    $('variant-dialog-title').textContent=record?'Переименовать вариант':'Сохранить вариант';
+    $('variant-submit').textContent=record?'Переименовать':'Сохранить';$('variant-error').textContent='';
+    $('variant-name').value=record?record.name:`${viewMode==='logo'?'EvaOr · ':''}${modelNames[state.model]} · ${new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}`;
+    $('variant-dialog').showModal();$('variant-name').focus();$('variant-name').select();
+  }
+  $('save-variant').addEventListener('click',()=>variantNameDialog());
+  $('variant-close').addEventListener('click',()=>$('variant-dialog').close());
+  $('variant-dialog').addEventListener('close',()=>pendingVariant=null);
+  $('variant-form').addEventListener('submit',event=>{
+    event.preventDefault();const name=$('variant-name').value.trim();
+    if(!name){$('variant-error').textContent='Введите название варианта.';return;}
+    if(!pendingVariant)return;
+    try{
+      const pending=pendingVariant;
+      changeLibrary(items=>{
+        if(pending.id){const record=items.find(x=>x.id===pending.id);if(!record)throw new Error('Вариант уже недоступен.');record.name=name;}
+        else items.unshift({id:crypto.randomUUID(),name,createdAt:new Date().toISOString(),snapshot:pending.snapshot});
+      });
+      $('variant-dialog').close();notice(pending.id?'Название изменено':'Вариант добавлен в «Сохранённые»');
+    }catch(error){$('variant-error').textContent=error.name==='QuotaExceededError'?'В браузере недостаточно места. Сохраните вариант в JSON.':`Не удалось сохранить: ${error.message}`;}
+  });
+  function renderLibrary(){
+    const epoch=++libraryPaint,grid=$('library-grid');grid.replaceChildren();
+    $('library-title').textContent=trashOpen?'Корзина':'Сохранённые варианты';
+    $('library-trash').textContent=trashOpen?'← Все варианты':'Корзина';$('library-trash').setAttribute('aria-pressed',String(trashOpen));
+    let entries;
+    try{entries=readLibrary().filter(x=>Boolean(x.deletedAt)===trashOpen);}catch(error){$('library-empty').hidden=false;$('library-empty').textContent=error.message;$('library-more').hidden=true;return;}
+    $('library-empty').hidden=entries.length>0;
+    $('library-empty').textContent=trashOpen?'Корзина пуста. Удалённые варианты можно будет восстановить здесь.':'Пока нет сохранённых вариантов. Настройте анимацию и нажмите «Сохранить вариант».';
+    $('library-more').hidden=entries.length<=libraryLimit;
+    const paintings=[];
+    for(const record of entries.slice(0,libraryLimit)){
+      let snapshot;try{snapshot=normaliseVariant(record.snapshot);}catch{snapshot=null;}
+      const card=document.createElement('article');card.className='variant-card';card.dataset.variantId=record.id;
+      const preview=document.createElement('button');preview.className='variant-preview';preview.setAttribute('aria-label','Открыть '+record.name);preview.disabled=!snapshot||trashOpen;
+      const thumbnail=document.createElement('canvas');thumbnail.width=480;thumbnail.height=300;thumbnail.setAttribute('aria-hidden','true');preview.append(thumbnail);
+      const info=document.createElement('div');info.className='variant-info';
+      const title=document.createElement('h2');title.textContent=record.name;
+      const meta=document.createElement('p');meta.textContent=snapshot?`${modelNames[snapshot.settings.model]} · ${snapshot.composition.view==='logo'?'Логотип':'Анимация'} · ${new Date(record.createdAt).toLocaleString('ru-RU')}`:'Этот вариант не поддерживается текущей версией.';
+      const actions=document.createElement('div');actions.className='variant-actions';
+      const action=(label,callback)=>{const button=document.createElement('button');button.textContent=label;button.addEventListener('click',()=>{try{callback();}catch(error){notice('Не удалось выполнить действие: '+error.message);}});actions.append(button);};
+      const open=()=>{const fresh=readLibrary().find(x=>x.id===record.id&&!x.deletedAt);if(!fresh)throw new Error('Вариант недоступен.');openVariant(fresh.snapshot);showLibrary(false);notice('Открыт вариант «'+fresh.name+'»');};
+      preview.addEventListener('click',()=>{try{open();}catch(error){notice(error.message);}});
+      if(trashOpen)action('Восстановить',()=>changeLibrary(items=>{const item=items.find(x=>x.id===record.id);if(item)delete item.deletedAt;}));
+      else{
+        if(snapshot)action('Открыть',open);
+        action('Переименовать',()=>variantNameDialog(record));
+        action('JSON',()=>exportVariant(record.snapshot));
+        action('В корзину',()=>changeLibrary(items=>{const item=items.find(x=>x.id===record.id);if(item)item.deletedAt=new Date().toISOString();}));
+      }
+      info.append(title,meta,actions);card.append(preview,info);grid.append(card);
+      if(snapshot)paintings.push(()=>{
+        const s=snapshot.settings,composition=snapshot.composition,out=thumbnail.getContext('2d');
+        renderScene(out,480,300,s,makeParticles(s.count),snapshot.playback.time,0,composition.view,composition.weight,composition.layout);
+        out.globalCompositeOperation='destination-over';out.fillStyle=s.background;out.fillRect(0,0,480,300);out.globalCompositeOperation='source-over';
+      });
+    }
+    const paintNext=()=>{if(epoch!==libraryPaint||!libraryOpen)return;const paint=paintings.shift();if(paint){paint();requestAnimationFrame(paintNext);}};
+    requestAnimationFrame(paintNext);
+  }
+  $('editor-tab').addEventListener('click',()=>showLibrary(false));$('library-tab').addEventListener('click',()=>showLibrary(true));
+  $('library-trash').addEventListener('click',()=>{trashOpen=!trashOpen;libraryLimit=12;renderLibrary();});
+  $('library-more').addEventListener('click',()=>{libraryLimit+=12;renderLibrary();});
+  window.addEventListener('storage',event=>{if(event.key===libraryKey||event.key===null){updateLibraryCount();if(libraryOpen)renderLibrary();}});
+  let videoJob=null;
+  const mp4Types=['video/mp4;codecs=avc1.420028','video/mp4;codecs=avc1','video/mp4'];
+  const mp4Type=()=>typeof MediaRecorder==='function'&&typeof canvas.captureStream==='function'?mp4Types.find(type=>MediaRecorder.isTypeSupported(type)):null;
+  $('export-video').addEventListener('click',()=>{
+    $('video-description').textContent=(viewMode==='logo'?'Логотип EvaOr с анимированной O. ':'Отдельная анимация. ')+'Без интерфейса. Видео 1080 × 1080, без звука, с выбранным фоном.';
+    $('video-dialog').showModal();$('video-progress').hidden=true;
+    const supported=mp4Type();$('video-start').disabled=!supported;
+    $('video-status').textContent=supported?'MP4 использует фон просмотра; прозрачность доступна только в PNG.':'Этот браузер не поддерживает запись MP4. Откройте этот редактор в актуальном Chrome или Edge.';
+  });
+  function cancelVideo(message='Запись отменена. Настройки сохранены.'){
+    if(!videoJob)return;
+    videoJob.cancelled=true;videoJob.message=message;clearTimeout(videoJob.timer);
+    if(videoJob.recorder.state!=='inactive')videoJob.recorder.stop();
+  }
+  $('video-close').addEventListener('click',()=>{cancelVideo();$('video-dialog').close();});
+  $('video-dialog').addEventListener('cancel',()=>cancelVideo());
+  $('video-cancel').addEventListener('click',()=>cancelVideo());
+  $('video-start').addEventListener('click',()=>{
+    if(videoJob)return;
+    const type=mp4Type();if(!type){$('video-status').textContent='Запись MP4 недоступна в этом браузере.';return;}
+    const seconds=Number($('video-duration').value);
+    const snapshot={...state},sampleParticles=particles.slice(),startTime=time,snapshotView=viewMode,snapshotWeight=logoWeight,snapshotLayout={...logoLayout};
+    const output=document.createElement('canvas');output.width=output.height=1080;
+    const out=output.getContext('2d',{alpha:true});
+    let stream,recorder;
+    function paint(elapsed){
+      renderScene(out,1080,1080,snapshot,sampleParticles,startTime+elapsed*snapshot.speed,0,snapshotView,snapshotWeight,snapshotLayout);
+      out.globalCompositeOperation='destination-over';out.fillStyle=snapshot.background;out.fillRect(0,0,1080,1080);out.globalCompositeOperation='source-over';
+    }
+    // Use an alpha canvas so the selected background can be composited behind the particles.
+    // The captured stream is opaque after each completed frame.
+    try{
+      paint(0);stream=output.captureStream(30);
+      recorder=new MediaRecorder(stream,{mimeType:type,videoBitsPerSecond:8000000});
+    }catch(error){stream?.getTracks().forEach(track=>track.stop());$('video-status').textContent='Не удалось запустить MP4. Попробуйте открыть редактор в Chrome или Edge.';return;}
+    const job={recorder,stream,timer:null,cancelled:false,message:'',chunks:[],started:0};videoJob=job;
+    $('video-start').disabled=true;$('video-duration').disabled=true;$('video-cancel').hidden=false;
+    $('video-progress').hidden=false;$('video-progress').value=0;$('video-status').textContent='Подготовка записи…';
+    const cleanup=()=>{
+      clearTimeout(job.timer);stream.getTracks().forEach(track=>track.stop());
+      if(videoJob===job)videoJob=null;
+      $('video-start').disabled=!mp4Type();$('video-duration').disabled=false;$('video-cancel').hidden=true;last=0;
+    };
+    recorder.ondataavailable=event=>{if(event.data.size)job.chunks.push(event.data);};
+    recorder.onerror=()=>{job.cancelled=true;job.message='Ошибка записи MP4. Попробуйте ещё раз.';if(recorder.state!=='inactive')recorder.stop();else{cleanup();$('video-status').textContent=job.message;}};
+    recorder.onstop=()=>{
+      cleanup();
+      if(job.cancelled){$('video-status').textContent=job.message;return;}
+      const blob=new Blob(job.chunks,{type:recorder.mimeType});
+      if(!blob.size){$('video-status').textContent='Видео получилось пустым. Попробуйте ещё раз.';return;}
+      download(blob,`evaor-${seconds}s-${new Date().toISOString().replace(/[:.]/g,'-')}.mp4`);
+      $('video-progress').value=100;$('video-status').textContent=`Готово: MP4, ${seconds} секунд. Файл сохранён в загрузки.`;
+    };
+    const startDrawing=()=>{
+      const tick=()=>{
+        if(videoJob!==job||job.cancelled)return;
+        const elapsed=(performance.now()-job.started)/1000;
+        if(elapsed>=seconds){$('video-status').textContent='Сохраняем MP4…';recorder.stop();return;}
+        paint(elapsed);$('video-progress').value=Math.min(99,elapsed/seconds*100);
+        $('video-status').textContent=`Запись MP4: ${Math.min(seconds,Math.floor(elapsed))} / ${seconds} с`;
+        job.timer=setTimeout(tick,Math.max(0,1000/30-(performance.now()-job.started-elapsed*1000)));
+      };
+      tick();
+    };
+    try{job.started=performance.now();recorder.start(1000);startDrawing();}catch{cleanup();$('video-status').textContent='Не удалось начать запись MP4.';}
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelVideo('Запись отменена: вкладка была скрыта. Повторите экспорт и оставьте её открытой.');});
+  function frame(now){const dt=last?Math.min((now-last)/1000,.05):0;last=now;if(!paused&&!document.hidden&&!videoJob&&!libraryOpen){const target=pressed?1.7:(hovered||focused?1:0);boost+=(target-boost)*(1-Math.exp(-dt*5));time+=dt*state.speed*(1+boost*1.8);draw();}requestAnimationFrame(frame);}
+  document.addEventListener('visibilitychange',()=>{last=0;});
+  seed();updateUI();updateLibraryCount();new ResizeObserver(resize).observe($('canvas-wrap'));requestAnimationFrame(frame);
+  document.fonts.load('400 100px "EvaOr Montserrat"','Evar').then(fonts=>{
+    if(!fonts.length)throw new Error('Font unavailable');
+    logoFontReady=true;updateViewUI();draw();if(libraryOpen)renderLibrary();
+  }).catch(()=>{if(viewMode==='logo')$('preview-hint').textContent='Montserrat не загрузился — обновите страницу';notice('Не удалось загрузить Montserrat. Экспорт логотипа недоступен до загрузки шрифта.');});
+})();

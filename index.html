@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eva Or — Particle Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="Eva Or — главная">eva<span class="brand-or">or</span><span class="brand-dot">•</span></a>
+    <nav class="library-nav" aria-label="Разделы студии"><button id="editor-tab" aria-pressed="true">Редактор</button><button id="library-tab" aria-pressed="false">Сохранённые <span id="library-count">0</span></button></nav>
+    <div class="export-actions"><button id="save-variant">Сохранить вариант</button><button id="export">Экспорт PNG <span>↗</span></button><button id="export-video" class="primary">Экспорт видео <span>↗</span></button></div>
+  </header>
+  <main id="editor-screen">
+    <section class="workspace" aria-label="Просмотр логотипа">
+      <div class="workspace-heading"><div><span class="eyebrow">INTELLIGENCE, BROUGHT TO LIGHT.</span><h1>Форма света</h1></div><span class="live"><i></i><span id="live-label">АНИМАЦИЯ</span></span></div>
+      <div class="presets" aria-label="Начальные стили">
+        <button data-preset="halo" class="active">01 <span>Световое кольцо</span></button>
+        <button data-preset="dust">02 <span>Звёздная пыль</span></button>
+        <button data-preset="rays">03 <span>Лучи</span></button>
+        <button data-preset="corona">04 <span>Солнечная корона</span></button>
+        <button data-preset="plasma">05 <span>Плазменная сфера</span></button>
+      </div>
+      <div class="preview-bar"><div class="segmented preview-switch" role="group" aria-label="Режим просмотра"><button id="view-animation" data-view="animation" aria-pressed="true">Анимация</button><button id="view-logo" data-view="logo" aria-pressed="false">Логотип</button></div><span id="preview-hint">Отдельная форма света</span></div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="canvas" role="img" aria-label="Анимированная буква O из частиц"></canvas>
+        <div class="canvas-corner" id="canvas-caption">O / ИССЛЕДОВАНИЕ ФОРМЫ</div>
+        <div class="canvas-scale">+<span>+</span></div>
+      </div>
+      <div class="stage-toolbar"><div><button id="pause" aria-pressed="false">Ⅱ Пауза</button><button id="restart" title="Начать движение сначала">↻ Сначала</button></div><span id="stats">1 800 частиц</span></div>
+      <div class="interaction-card"><div><span class="eyebrow">ПОПРОБУЙ ВЗАИМОДЕЙСТВИЕ</span><p>Свет реагирует на твоё движение.</p><span class="hint">Наведи на кнопку или нажми и удерживай её.</span></div><button id="react">Начать проект <span>↗</span></button></div>
+    </section>
+    <aside class="panel" aria-label="Настройки частиц">
+      <div class="panel-heading"><h2 id="model-title">Настройки</h2><button id="reset" class="text-button" title="Сбросить выбранную модель">Сбросить</button></div>
+      <div class="panel-scroll" id="panel-scroll">
+        <section class="control-section" id="logo-type-options" hidden><h3>Композиция логотипа · Montserrat</h3><label class="field-label" for="logo-weight">Толщина шрифта</label><select id="logo-weight"><option value="300">Light · 300</option><option value="400" selected>Regular · 400</option><option value="500">Medium · 500</option><option value="600">Semi-Bold · 600</option><option value="700">Bold · 700</option></select><div class="control"><div class="control-label"><label for="logo-o-scale">Размер анимации O</label><output id="logo-o-scale-value" for="logo-o-scale">100 %</output></div><input id="logo-o-scale" type="range" min="25" max="200" step="1" value="100"></div><div class="control"><div class="control-label"><label for="logo-spacing">Интервалы между буквами</label><output id="logo-spacing-value" for="logo-spacing">0 %</output></div><input id="logo-spacing" type="range" min="-10" max="30" step="1" value="0"></div><p class="hint">O: 100% — высота заглавной буквы. Интервалы меняют все четыре промежутка, включая соседей O; 0% — исходные интервалы. Настройки анимации сохраняются. Крупная композиция автоматически вписывается в окно.</p></section>
+        <section class="control-section"><h3><span>01</span> Геометрия</h3><div id="geometry-controls"></div><div id="plasmaGeometry-controls" hidden></div></section>
+        <section class="control-section"><h3><span>02</span> <span id="motion-title" class="section-title">Движение частиц</span></h3>
+          <div id="radial-options"><label class="field-label" for="direction">Направление</label>
+          <div class="segmented" id="direction" role="group" aria-label="Направление движения"><button data-direction="out" aria-pressed="true">↗ Наружу</button><button data-direction="in" aria-pressed="false">↙ Внутрь</button><button data-direction="both" aria-pressed="false">↔ Оба</button></div>
+          <label class="field-label" for="source">Место появления</label><select id="source"><option value="band">В толще кольца</option><option value="contour">Точный контур O</option><option value="inner">Внутренний контур</option><option value="outer">Внешний контур</option><option value="point">Заданная точка ↔ кольцо</option></select>
+          </div><div id="point-controls" hidden></div><div id="motion-controls"></div>
+          <div id="trajectory-options"><label class="field-label" for="trajectory">Траектория полёта</label><select id="trajectory"><option value="base">Обычная</option><option value="spiral">Спираль вдоль пути</option><option value="growing">Спираль с ростом радиуса</option></select><div id="spiral-options" hidden><div id="spiral-controls"></div><p class="hint">Частица продвигается к цели, описывая витки. У начала и конца ширина спирали плавно уменьшается. «Закручивание» отдельно поворачивает основной поток вокруг O.</p></div></div>
+          <div id="growth-options" hidden><div id="growth-controls"></div><label class="field-label" for="growthRotation">Направление вращения</label><select id="growthRotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option></select><p class="hint">Частица вращается и непрерывно удаляется от центра. «Внутрь» обращает движение радиуса, «Оба» сочетает потоки. Для точечного источника центр спирали — заданная точка.</p></div>
+          <div id="vortex-options" hidden><label class="field-label" for="rotation">Направление вращения</label><select id="rotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option></select><div id="vortex-controls"></div><p class="hint">Два зернистых потока движутся по кольцу. Длина и рассеивание хвостов меняют силуэт; цвета потоков смешиваются в местах наложения.</p></div>
+          <div id="plasma-options" hidden><label class="field-label" for="plasmaFlow">Движение электрических импульсов</label><select id="plasmaFlow"><option value="out">От центра к краю</option><option value="in">От края к центру</option><option value="both">В обе стороны</option><option value="off">Без движения — цельные лучи</option></select><div id="plasmaFlow-controls"></div><div id="plasmaMotion-controls"></div><label class="field-label" for="plasmaRotation">Направление вращения сферы</label><select id="plasmaRotation"><option value="cw">Прямое</option><option value="ccw">Обратное</option></select><p class="hint">Яркие импульсы бегут вдоль лучей с затухающим хвостом. В режиме «В обе стороны» часть лучей направлена к центру, часть — к краю. Мерцание каждого луча независимо. Общая скорость влияет на движение, вращение и частоту мерцания.</p></div>
+          <div id="density-controls"></div>
+          <label class="toggle-row" for="raysEnabled">Собрать частицы в лучи<input id="raysEnabled" type="checkbox"></label>
+          <div id="ray-controls" hidden></div>
+          <p class="hint" id="ray-hint">Лучи — потоки частиц из одних и тех же участков контура. Они работают и без следа.</p>
+        </section>
+        <section class="control-section"><h3><span>03</span> <span id="color-title" class="section-title">Рождение и затухание</span></h3>
+          <div class="color-row"><label for="color">Цвет при рождении</label><input id="color" type="color" value="#e0ede6"></div>
+          <div class="color-row"><label for="colorEnd">Цвет при затухании</label><input id="colorEnd" type="color" value="#e0ede6"></div>
+          <div id="plasma-colors" hidden><div class="color-row"><label for="plasmaRimColor">Цвет ободка</label><input id="plasmaRimColor" type="color" value="#ff43d3"></div><div class="color-row"><label for="plasmaCoreColor">Цвет центра</label><input id="plasmaCoreColor" type="color" value="#ff8ae8"></div></div>
+          <div id="color-preview" class="color-preview" aria-label="Переход цвета и непрозрачности"><div id="color-gradient"></div></div>
+          <div class="gradient-labels" id="gradient-labels"><span>Рождение</span><span>Затухание</span></div>
+          <div id="lifecycle-controls"></div>
+          <p class="hint" id="lifecycle-hint">Непрозрачность: 0% — невидимо, 100% — насыщенно. Размер в конце задан в процентах от начального. Кривая выше 1 дольше сохраняет начальное значение; перед исчезновением частица плавно гаснет.</p>
+        </section>
+        <section class="control-section"><h3><span>04</span> <span id="light-title" class="section-title">Свет и след</span></h3><label class="toggle-row" for="trails">След за частицей<input id="trails" type="checkbox" checked></label><div id="light-controls"></div><div id="plasmaLight-controls" hidden></div>
+          <div class="color-row"><label for="background">Фон просмотра</label><input id="background" type="color" value="#000000"></div>
+          <label class="toggle-row" for="transparent">Прозрачный фон PNG<input id="transparent" type="checkbox" checked></label>
+          <p class="hint">PNG сохраняет выбранный вид в размере 2048 × 2048: отдельную анимацию или логотип EvaOr. Интерфейс не попадает в файл.</p>
+        </section>
+        <section class="control-section"><h3><span>05</span> Мои варианты</h3><div class="save-actions"><button id="save">↓ Сохранить JSON</button><button id="load">↑ Открыть JSON</button></div><input id="file-input" type="file" accept=".json,application/json" hidden><p class="hint">Текущие параметры автоматически сохраняются в этом браузере.</p></section>
+      </div>
+      <footer class="panel-footer"><span class="status-dot"></span> Создано для Eva Or <span>v0.3</span></footer>
+    </aside>
+  </main>
+  <section id="library-screen" class="library-screen" aria-labelledby="library-title" hidden>
+    <div class="library-heading"><div><span class="eyebrow">EVAOR / МОЯ КОЛЛЕКЦИЯ</span><h1 id="library-title">Сохранённые варианты</h1></div><button id="library-trash" aria-pressed="false">Корзина</button></div>
+    <p class="hint">Варианты хранятся в этом браузере. Откройте карточку, чтобы восстановить анимацию и композицию логотипа. JSON — копия для переноса или отправки клиенту.</p>
+    <p id="library-empty" class="library-empty">Пока нет сохранённых вариантов. Настройте анимацию и нажмите «Сохранить вариант».</p>
+    <div id="library-grid" class="library-grid"></div><button id="library-more" hidden>Показать ещё</button>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+  <dialog id="variant-dialog" aria-labelledby="variant-dialog-title"><form id="variant-form"><div class="video-heading"><h2 id="variant-dialog-title">Сохранить вариант</h2><button id="variant-close" type="button" aria-label="Закрыть сохранение">×</button></div><p class="hint">Сохраняются все параметры, вид просмотра, шрифт, размер O, интервалы и текущая фаза анимации.</p><label class="field-label" for="variant-name">Название варианта</label><input id="variant-name" type="text" maxlength="80" required autocomplete="off"><p id="variant-error" role="status"></p><div class="video-actions"><button id="variant-submit" type="submit" class="primary">Сохранить</button></div></form></dialog>
+  <dialog id="video-dialog" aria-labelledby="video-title">
+    <div class="video-heading"><h2 id="video-title">Экспорт видео · MP4</h2><button id="video-close" aria-label="Закрыть экспорт видео">×</button></div>
+    <p class="video-description" id="video-description">Выбранный вид без интерфейса. Квадратное видео 1080 × 1080, без звука, с выбранным фоном.</p>
+    <label class="field-label" for="video-duration">Длительность</label><select id="video-duration"><option value="8">8 секунд</option><option value="10">10 секунд</option></select>
+    <p class="hint">Запись начнётся с текущего кадра, даже если просмотр на паузе. Оставьте эту вкладку открытой до завершения. При нулевой скорости видео будет неподвижным.</p>
+    <progress id="video-progress" max="100" value="0" hidden></progress>
+    <p id="video-status" role="status" aria-live="polite">MP4 использует фон просмотра; прозрачность доступна только в PNG.</p>
+    <div class="video-actions"><button id="video-cancel" hidden>Отменить запись</button><button id="video-start" class="primary">Скачать MP4</button></div>
+  </dialog>
+  <script src="particle-math.js"></script>
+  <script src="studio.js"></script>
+</body>
+</html>

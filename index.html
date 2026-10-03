@@ -22,13 +22,16 @@
         <button data-preset="corona">04 <span>Солнечная корона</span></button>
         <button data-preset="plasma">05 <span>Плазменная сфера</span></button>
       </div>
-      <div class="preview-bar"><div class="segmented preview-switch" role="group" aria-label="Режим просмотра"><button id="view-animation" data-view="animation" aria-pressed="true">Анимация</button><button id="view-logo" data-view="logo" aria-pressed="false">Логотип</button></div><span id="preview-hint">Отдельная форма света</span></div>
+      <div class="preview-bar">
+        <div class="playback-controls" role="group" aria-label="Управление воспроизведением"><button id="pause" aria-pressed="false">Ⅱ Пауза</button><button id="restart" title="Начать движение сначала">↻ Сначала</button></div>
+        <div class="segmented preview-switch" role="group" aria-label="Режим просмотра"><button id="view-animation" data-view="animation" aria-pressed="true">Анимация</button><button id="view-logo" data-view="logo" aria-pressed="false">Логотип</button></div>
+      </div>
       <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="canvas" role="img" aria-label="Анимированная буква O из частиц"></canvas>
         <div class="canvas-corner" id="canvas-caption">O / ИССЛЕДОВАНИЕ ФОРМЫ</div>
         <div class="canvas-scale">+<span>+</span></div>
       </div>
-      <div class="stage-toolbar"><div><button id="pause" aria-pressed="false">Ⅱ Пауза</button><button id="restart" title="Начать движение сначала">↻ Сначала</button></div><span id="stats">1 800 частиц</span></div>
+      <div class="stage-toolbar"><span id="stats">1 800 частиц</span></div>
       <div class="interaction-card"><div><span class="eyebrow">ПОПРОБУЙ ВЗАИМОДЕЙСТВИЕ</span><p>Свет реагирует на твоё движение.</p><span class="hint">Наведи на кнопку или нажми и удерживай её.</span></div><button id="react">Начать проект <span>↗</span></button></div>
     </section>
     <aside class="panel" aria-label="Настройки частиц">

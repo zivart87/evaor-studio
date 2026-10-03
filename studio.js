@@ -171,7 +171,6 @@
   function seed(){particles=makeParticles(state.count);}
   function updateViewUI(){
     document.querySelectorAll('[data-view]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.view===viewMode)));
-    $('preview-hint').textContent=viewMode==='logo'?(logoFontReady?'EvaOr · Montserrat · анимация вместо O':'Загрузка Montserrat…'):'Отдельная форма света';
     $('export').disabled=$('export-video').disabled=viewMode==='logo'&&!logoFontReady;
     $('save-variant').disabled=viewMode==='logo'&&!logoFontReady;
     $('logo-type-options').hidden=viewMode!=='logo';
@@ -538,5 +537,5 @@
   document.fonts.load('400 100px "EvaOr Montserrat"','Evar').then(fonts=>{
     if(!fonts.length)throw new Error('Font unavailable');
     logoFontReady=true;updateViewUI();draw();if(libraryOpen)renderLibrary();
-  }).catch(()=>{if(viewMode==='logo')$('preview-hint').textContent='Montserrat не загрузился — обновите страницу';notice('Не удалось загрузить Montserrat. Экспорт логотипа недоступен до загрузки шрифта.');});
+  }).catch(()=>{notice('Не удалось загрузить Montserrat. Экспорт логотипа недоступен до загрузки шрифта.');});
 })();

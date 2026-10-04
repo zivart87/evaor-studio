@@ -4,6 +4,10 @@
   const TAU = Math.PI * 2;
   const defaults = { trajectory:'base', growthTurns:.5, growthSpread:35, growthRotation:'cw', spiralWidth:3, spiralTurns:3, spiralPhase:25, model:'halo', rotation:'cw', tailLength:260, dispersion:35, tailFade:.65, vortexOpacity:90, count:1800, radius:27, thickness:4, size:1.2, asymmetry:8, direction:'out', source:'band', speed:0.65, life:4, travel:11, swirl:10, trails:true, trail:16, glow:25, color:'#e0ede6', colorEnd:'#e0ede6', background:'#000000', transparent:true, pointX:0, pointY:0, raysEnabled:false, rayCount:140, raySpread:35, rayVariation:60, contourDensity:0, sizeEnd:100, opacityStart:100, opacityEnd:100, colorCurve:1, fadeCurve:1 };
   const specs = {
+    arcGeometry:[['arcCount','Количество контуров',1,12,1,''],['arcSpread','Расстояние между крайними кольцами',0,18,.5,'%'],['arcOffset','Смещение центров',0,5,.1,'%'],['arcWarp','Волнистость контура',0,4,.1,'%'],['arcWidth','Толщина линий',.5,5,.1,'px']],
+    arcMotion:[['arcLength','Длина дуги · 360° — кольцо',30,360,1,'°'],['arcPhase','Разброс положения дуг',0,100,1,'%'],['arcIndependent','Разница скоростей колец',0,100,1,'%'],['arcPulse','Пульсация яркости',0,100,1,'%']],
+    arcLight:[['arcOpacity','Непрозрачность дуг',0,100,1,'%'],['arcFade','Затухание светового хвоста',.25,3,.05,'×']],
+    arcParticles:[['arcParticles','Количество искр',0,1500,10,''],['arcParticleSize','Размер искр',.3,3,.1,'px'],['arcScatter','Рассеивание от контура',0,6,.1,'%']],
     plasmaGeometry:[['plasmaCount','Количество лучей',12,160,1,''],['plasmaWidth','Толщина лучей',.4,3,.1,'px']],
     plasmaMotion:[['plasmaSpin','Скорость вращения',0,3,.05,'×'],['plasmaTilt','Наклон оси',0,90,1,'°'],['plasmaPulse','Сила мерцания',0,100,1,'%'],['plasmaFlickerRate','Частота мерцания',0,15,.5,'Гц'],['plasmaTurbulence','Изгибы разрядов',0,100,1,'%']],
     plasmaFlow:[['plasmaFlowSpeed','Скорость импульсов',0,3,.05,'×'],['plasmaPacketLength','Длина импульса',5,60,1,'%'],['plasmaBaseLight','Постоянное свечение лучей',0,100,1,'%']],
@@ -20,9 +24,11 @@
     lifecycle:[['sizeEnd','Размер в конце',0,150,1,'%'],['opacityStart','Непрозрачность при рождении',0,100,1,'%'],['opacityEnd','Непрозрачность при затухании',0,100,1,'%'],['colorCurve','Кривая перехода цвета',.25,3,.05,'×'],['fadeCurve','Кривая непрозрачности',.25,3,.05,'×']]
   };
   const ranges = Object.values(specs).flat();
+  Object.assign(defaults,EvaOrParticles.arcDefaults);
   Object.assign(defaults,{plasmaCount:64,plasmaWidth:1.8,plasmaSpin:.75,plasmaTilt:28,plasmaPulse:65,plasmaTurbulence:25,plasmaRim:90,plasmaCore:85,plasmaCoreSize:7,plasmaRotation:'cw',plasmaRimColor:'#ff43d3',plasmaCoreColor:'#ff8ae8'});
   Object.assign(defaults,{plasmaFlow:'out',plasmaFlowSpeed:.8,plasmaPacketLength:25,plasmaBaseLight:12,plasmaFlickerRate:7});
   const presets = {
+    arcs:{...defaults,model:'arcs',radius:30,speed:.65,glow:95,color:'#63deff',colorEnd:'#243cff',trails:false},
     plasma:{...defaults,model:'plasma',radius:35,speed:.7,glow:90,color:'#6557ff',colorEnd:'#83c4ff',trails:false},
     halo:{...defaults},
     dust:{...defaults,model:'dust',count:3500,size:.8,thickness:7,asymmetry:20,travel:17,trails:false,glow:10,speed:.35,direction:'both',swirl:4},
@@ -36,6 +42,7 @@
     if(Object.hasOwn(presets,raw.model)) next.model=raw.model;
     if(['cw','ccw'].includes(raw.rotation)) next.rotation=raw.rotation;
     if(['cw','ccw'].includes(raw.plasmaRotation)) next.plasmaRotation=raw.plasmaRotation;
+    if(['cw','ccw','both'].includes(raw.arcRotation))next.arcRotation=raw.arcRotation;
     if(['out','in','both','off'].includes(raw.plasmaFlow))next.plasmaFlow=raw.plasmaFlow;
     if(['base','spiral','growing'].includes(raw.trajectory)) next.trajectory=raw.trajectory;
     if(['cw','ccw'].includes(raw.growthRotation))next.growthRotation=raw.growthRotation;
@@ -43,6 +50,7 @@
     next.count = Math.min(next.model==='vortex'?50000:6000,Math.round(next.count));
     next.rayCount = Math.round(next.rayCount);
     next.plasmaCount = Math.round(next.plasmaCount);
+    next.arcCount=Math.round(next.arcCount);next.arcParticles=Math.round(next.arcParticles);
     for (const key of ['trails','transparent','raysEnabled']) if (typeof raw[key] === 'boolean') next[key] = raw[key];
     for (const key of ['color','colorEnd','background','plasmaRimColor','plasmaCoreColor']) if (typeof raw[key] === 'string' && /^#[\da-f]{6}$/i.test(raw[key])) next[key] = raw[key];
     if (!Object.hasOwn(raw,'colorEnd')) next.colorEnd=next.color; // Version 1 single-colour presets.
@@ -79,7 +87,7 @@
       localStorage.setItem('evaor-black-background-v1','1');
     }
   } catch {}
-  const modelNames={halo:'Световое кольцо',dust:'Звёздная пыль',rays:'Лучи',vortex:'Цветовой вихрь',corona:'Солнечная корона',plasma:'Плазменная сфера'};
+  const modelNames={halo:'Световое кольцо',dust:'Звёздная пыль',rays:'Лучи',vortex:'Цветовой вихрь',corona:'Солнечная корона',plasma:'Плазменная сфера',arcs:'Световые дуги'};
   let drafts={};
   try {const saved=JSON.parse(localStorage.getItem('evaor-model-drafts-v1')||'{}');for(const key of Object.keys(presets))if(saved[key])drafts[key]=validate({...saved[key],model:key});} catch {}
   let particles=[], time=0, paused=matchMedia('(prefers-reduced-motion: reduce)').matches, last=0, boost=0, hovered=false, pressed=false, focused=false, toastTimer;
@@ -159,7 +167,22 @@
       document.querySelector('label[for="colorEnd"]').textContent='Лучи у поверхности';
       $('stats').textContent=state.plasmaCount+' лучей · объёмное вращение';
     }
-    canvas.setAttribute('aria-label',plasma?'Вращающаяся плазменная сфера со световыми лучами':'Анимированная буква O из частиц');
+    const arcs=state.model==='arcs';
+    for(const id of ['arcGeometry-controls','arc-options','arcLight-controls','arc-particles'])$(id).hidden=!arcs;
+    $('arcRotation').value=state.arcRotation;
+    if(arcs){
+      for(const id of ['radial-options','trajectory-options','spiral-options','growth-options','density-controls','point-controls','ray-controls','ray-hint','lifecycle-controls','lifecycle-hint','color-preview','gradient-labels'])$(id).hidden=true;
+      for(const key of ['count','size','asymmetry','thickness','life','travel','swirl','trail'])showControl(key,false);
+      for(const id of ['raysEnabled','trails'])$(id).closest('label').hidden=true;
+      showControl('arcParticleSize',state.arcParticles>0);showControl('arcScatter',state.arcParticles>0);
+      for(const key of ['arcSpread','arcOffset','arcPhase','arcIndependent'])showControl(key,state.arcCount>1);
+      document.querySelector('label[for="radius"]').textContent='Радиус колец';
+      document.querySelector('label[for="color"]').textContent='Цвет яркой части';
+      document.querySelector('label[for="colorEnd"]').textContent='Цвет хвоста';
+      $('motion-title').textContent='Дуги и вращение';$('color-title').textContent='Цвета световых дуг';$('light-title').textContent='Свечение и искры';
+      $('stats').textContent=state.arcCount+' контуров · '+state.arcParticles+' искр';
+    }
+    canvas.setAttribute('aria-label',arcs?'Вращающиеся световые дуги с искрами':plasma?'Вращающаяся плазменная сфера со световыми лучами':'Анимированная буква O из частиц');
     updateViewUI();
     $('pause').textContent=paused?'▶ Воспроизвести':'Ⅱ Пауза';$('pause').setAttribute('aria-pressed',String(paused));$('live-label').textContent=paused?'ПАУЗА':'АНИМАЦИЯ';
   }
@@ -216,9 +239,10 @@
     const vX=target.measureText('Ev').width-target.measureText('v').width+tracking;
     const aX=target.measureText('Eva').width-target.measureText('a').width+tracking*2;
     const left=target.measureText('Eva').width+tracking*2,right=target.measureText('r').width;
-    const band=['band','outer','point'].includes(state.source)&&state.model!=='plasma'?state.thickness*.5:0;
-    const contour=Math.max(5,state.radius+band);
-    const outward=state.model!=='plasma'&&state.direction!=='in'?state.travel:0;
+    const solid=['plasma','arcs'].includes(state.model);
+    const band=['band','outer','point'].includes(state.source)&&!solid?state.thickness*.5:0;
+    const contour=state.model==='arcs'?EvaOrParticles.createArcScene(state,0,0,100).radius:Math.max(5,state.radius+band);
+    const outward=!solid&&state.direction!=='in'?state.travel:0;
     // Keep EvaOr a single word; outer particles may spill softly over adjacent letters.
     const spread=Math.min(2.2,1+outward/contour),slot=cap*layout.oScale/100;
     const gap=fontSize*.025+tracking,total=left+gap*2+slot+right;
@@ -234,6 +258,7 @@
     target.restore();
   }
   function renderArtwork(target,w,h,state,particles,time,boost){
+    if(state.model==='arcs'){renderArcs(target,w,h,state,time,boost);return;}
     if(state.model==='plasma'){renderPlasma(target,w,h,state,time,boost);return;}
     const extent=Math.min(w,h)*.88;
     const scale=extent/650;
@@ -262,6 +287,40 @@
         target.fillStyle=`rgba(${rgb},${fade*state.glow/100*.15})`;target.beginPath();target.arc(at.x,at.y,radius*2.2,0,TAU);target.fill();
       }
       target.fillStyle=`rgba(${rgb},${fade})`;target.beginPath();target.arc(at.x,at.y,radius,0,TAU);target.fill();
+    }
+    target.restore();
+  }
+  function renderArcs(target,w,h,state,time,boost){
+    const extent=Math.min(w,h)*.88,scene=EvaOrParticles.createArcScene(state,time,boost,extent);
+    const start=state.color.slice(1).match(/../g).map(v=>parseInt(v,16));
+    const end=state.colorEnd.slice(1).match(/../g).map(v=>parseInt(v,16));
+    const tint=u=>end.map((v,i)=>Math.round(v+(start[i]-v)*u)).join(',');
+    const glow=state.glow/100;
+    target.save();target.translate(w/2,h/2);target.globalCompositeOperation='lighter';target.lineCap='round';
+    for(const ring of scene.rings){
+      const steps=Math.max(32,Math.ceil(state.arcLength/360*220));
+      const points=Array.from({length:steps+1},(_,i)=>scene.point(ring,i/steps));
+      for(let i=0;i<steps;i++){
+        const u=(i+.5)/steps,a=scene.strength(ring,u);
+        if(a<.002)continue;
+        const bright=state.arcLength===360?.5-.5*Math.cos(TAU*u):u;
+        const color=tint(bright),line=ring.width*(.55+.45*bright);
+        target.beginPath();target.moveTo(points[i].x,points[i].y);target.lineTo(points[i+1].x,points[i+1].y);
+        // Layered translucent strokes preserve a crisp core, including in transparent PNGs.
+        if(glow>0){
+          for(const [width,alpha] of [[28,.025],[12,.07],[5,.18]]){
+            target.lineWidth=line*width;target.strokeStyle=`rgba(${color},${a*glow*alpha})`;target.stroke();
+          }
+        }
+        target.lineWidth=line;target.strokeStyle=`rgba(${color},${a})`;target.stroke();
+        target.lineWidth=line*.3;target.strokeStyle=`rgba(255,255,255,${a*bright*.55})`;target.stroke();
+      }
+    }
+    for(let i=0;i<state.arcParticles;i++){
+      const p=scene.spark(i);if(p.alpha<.005)continue;
+      const color=tint(p.u);
+      if(glow>0){target.fillStyle=`rgba(${color},${p.alpha*glow*.08})`;target.beginPath();target.arc(p.x,p.y,p.size*3,0,TAU);target.fill();}
+      target.fillStyle=`rgba(${color},${p.alpha})`;target.beginPath();target.arc(p.x,p.y,p.size,0,TAU);target.fill();
     }
     target.restore();
   }
@@ -338,7 +397,7 @@
   function resize(){const box=$('canvas-wrap').getBoundingClientRect();if(box.width<=2||box.height<=2)return;width=box.width-2;height=box.height-2;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);draw();}
   document.querySelectorAll('[data-direction]').forEach(el=>el.addEventListener('click',()=>{state.direction=el.dataset.direction;changed();}));
   document.querySelectorAll('[data-preset]').forEach(el=>el.addEventListener('click',()=>{persist();state={...(drafts[el.dataset.preset]||presets[el.dataset.preset])};time=0;boost=0;seed();changed();$('panel-scroll')?.scrollTo(0,0);}));
-  for(const key of ['source','color','colorEnd','background','trails','transparent','raysEnabled','rotation','trajectory','growthRotation','plasmaRotation','plasmaFlow','plasmaCoreColor','plasmaRimColor']) $(key).addEventListener('input',()=>{state[key]=$(key).type==='checkbox'?$(key).checked:$(key).value;changed();});
+  for(const key of ['source','color','colorEnd','background','trails','transparent','raysEnabled','rotation','trajectory','growthRotation','plasmaRotation','plasmaFlow','plasmaCoreColor','plasmaRimColor','arcRotation']) $(key).addEventListener('input',()=>{state[key]=$(key).type==='checkbox'?$(key).checked:$(key).value;changed();});
   $('pause').addEventListener('click',()=>{paused=!paused;updateUI();});
   $('restart').addEventListener('click',()=>{time=0;boost=0;draw();});
   $('reset').addEventListener('click',()=>{state={...presets[state.model]};time=0;boost=0;seed();changed();notice('Настройки этой модели восстановлены');});

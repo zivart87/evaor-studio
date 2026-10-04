@@ -180,5 +180,43 @@
     const progress=phase-Math.floor(phase),head=sign>0?progress:1-progress;
     return {head,sign,length:state.plasmaPacketLength/100,fade:smooth(progress/.045)*smooth((1-progress)/.045)};
   }
-  return {createModel,createPlasmaScene,plasmaImpulse};
+  const arcDefaults={arcCount:5,arcSpread:7,arcOffset:1.3,arcWarp:.8,arcWidth:3.2,arcLength:285,arcPhase:85,arcIndependent:45,arcRotation:'cw',arcPulse:15,arcOpacity:90,arcFade:1.2,arcParticles:450,arcParticleSize:1,arcScatter:2.5};
+  function createArcScene(state,time=0,boost=0,extent=650){
+    const s={...arcDefaults,...state},n=Math.round(s.arcCount);
+    // Fit even the widest settings inside the preview without clipping the outer rings.
+    const spread=n===1?0:Math.min(s.arcSpread,s.radius*1.8),offsetMax=n===1?0:s.arcOffset;
+    const bound=s.radius+spread/2+offsetMax+s.arcWarp+3;
+    const fit=Math.min(1,48/bound),unit=extent/100*fit*(1+boost*.035);
+    const rings=Array.from({length:n},(_,i)=>{
+      const sign=s.arcRotation==='ccw'?-1:s.arcRotation==='both'&&i%2?-1:1;
+      const phase=i*2.3999632297*s.arcPhase/100;
+      const velocity=sign*(.55+(noise(i+42)-.5)*(n===1?0:s.arcIndependent)/100*.8);
+      const head=phase+time*velocity;
+      const offset=s.arcOffset*unit*(n===1?0:Math.sqrt(i/(n-1)));
+      return {index:i,sign,head,velocity,radius:(s.radius+(n===1?0:i/(n-1)-.5)*spread)*unit,
+        x:Math.cos(phase+1.2)*offset,y:Math.sin(phase+1.2)*offset,
+        length:s.arcLength/360*TAU,warp:s.arcWarp*unit,phase,
+        opacity:s.arcOpacity/100*(1-s.arcPulse/100*(.5+.5*Math.sin(time*1.8+i*1.7))),
+        width:s.arcWidth*(.7+noise(i+8)*.6)*extent/650};
+    });
+    function point(r,u){
+      const angle=r.head-r.sign*r.length*(1-u);
+      const radial=r.radius+r.warp*(.65*Math.sin(3*angle+r.phase)+.35*Math.sin(5*angle-r.phase));
+      return {x:r.x+Math.cos(angle)*radial,y:r.y+Math.sin(angle)*radial,angle};
+    }
+    function strength(r,u){
+      // Closed rings have matching values and derivatives at their seam.
+      if(s.arcLength===360)return r.opacity*(.12+.88*Math.pow(.5-.5*Math.cos(TAU*u),s.arcFade*2));
+      return r.opacity*Math.pow(u,s.arcFade)*smooth(u/.04)*smooth((1-u)/.045);
+    }
+    function spark(i){
+      const r=rings[i%n],age=(noise(i+900)+time*.17)%1,u=noise(i+600);
+      const p=point(r,u),distance=(noise(i+1200)-.5)*s.arcScatter*unit*(.2+age*1.6);
+      return {x:p.x+Math.cos(p.angle)*distance,y:p.y+Math.sin(p.angle)*distance,
+        alpha:strength(r,u)*Math.sin(Math.PI*age)*(.3+noise(i+1800)*.7),
+        size:s.arcParticleSize*extent/650*(.4+noise(i+2100))*(1-age*.7),u};
+    }
+    return {rings,point,strength,spark,radius:s.radius*unit};
+  }
+  return {createModel,createPlasmaScene,plasmaImpulse,arcDefaults,createArcScene};
 });

@@ -4,7 +4,7 @@ Interactive light and particle editor for the EvaOr logo. Built with browser Can
 
 ## Features
 
-- Five animation models, including a rotating plasma sphere with travelling electrical impulses.
+- Six animation models, including a rotating plasma sphere and layered light arcs with contour sparks.
 - EvaOr logo preview with animated O, Montserrat weights, O scaling and letter spacing.
 - Named variants with a preview gallery, restoreable trash and JSON import/export.
 - PNG and browser-supported MP4 export.

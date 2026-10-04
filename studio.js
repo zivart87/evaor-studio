@@ -184,7 +184,7 @@
     }
     canvas.setAttribute('aria-label',arcs?'Вращающиеся световые дуги с искрами':plasma?'Вращающаяся плазменная сфера со световыми лучами':'Анимированная буква O из частиц');
     updateViewUI();
-    $('pause').textContent=paused?'▶ Воспроизвести':'Ⅱ Пауза';$('pause').setAttribute('aria-pressed',String(paused));$('live-label').textContent=paused?'ПАУЗА':'АНИМАЦИЯ';
+    $('playback-icon').textContent=paused?'▶':'Ⅱ';$('playback-label').textContent=paused?'Воспроизвести':'Пауза';$('pause').setAttribute('aria-pressed',String(paused));$('live-label').textContent=paused?'ПАУЗА':'АНИМАЦИЯ';
   }
   function changed(){updateUI();persist();draw();}
   function makeParticles(count){
@@ -399,7 +399,6 @@
   document.querySelectorAll('[data-preset]').forEach(el=>el.addEventListener('click',()=>{persist();state={...(drafts[el.dataset.preset]||presets[el.dataset.preset])};time=0;boost=0;seed();changed();$('panel-scroll')?.scrollTo(0,0);}));
   for(const key of ['source','color','colorEnd','background','trails','transparent','raysEnabled','rotation','trajectory','growthRotation','plasmaRotation','plasmaFlow','plasmaCoreColor','plasmaRimColor','arcRotation']) $(key).addEventListener('input',()=>{state[key]=$(key).type==='checkbox'?$(key).checked:$(key).value;changed();});
   $('pause').addEventListener('click',()=>{paused=!paused;updateUI();});
-  $('restart').addEventListener('click',()=>{time=0;boost=0;draw();});
   $('reset').addEventListener('click',()=>{state={...presets[state.model]};time=0;boost=0;seed();changed();notice('Настройки этой модели восстановлены');});
   const react=$('react');
   react.addEventListener('pointerenter',()=>hovered=true);react.addEventListener('pointerleave',()=>{hovered=false;pressed=false;});react.addEventListener('pointerdown',()=>pressed=true);window.addEventListener('pointerup',()=>pressed=false);react.addEventListener('pointercancel',()=>pressed=false);react.addEventListener('focus',()=>focused=true);react.addEventListener('blur',()=>{focused=false;pressed=false;});

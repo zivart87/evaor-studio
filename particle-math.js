@@ -218,5 +218,27 @@
     }
     return {rings,point,strength,spark,radius:s.radius*unit};
   }
-  return {createModel,createPlasmaScene,plasmaImpulse,arcDefaults,createArcScene};
+  const waveDefaults={waveCount:3,waveRadius:10,waveWidth:4.2,waveCoreWidth:2.5,waveX:12,waveY:12,wavePosition:'br',waveShape:'crescent',waveTravel:24,waveDirection:225,waveBias:85,wavePeriod:6,waveOpacity:100,waveCoreOpacity:100};
+  function createWaveScene(state,time=0,boost=0,extent=650){
+    const s={...waveDefaults,...state},angle=s.waveDirection*Math.PI/180;
+    const dx=Math.cos(angle),dy=Math.sin(angle),travel=s.waveTravel*(1+boost*.08);
+    // Fixed bounds across the whole cycle prevent the composition from changing size as waves recycle.
+    const endX=s.waveX+dx*travel*s.waveBias/100,endY=s.waveY+dy*travel*s.waveBias/100;
+    const bound=Math.max(Math.abs(s.waveX)+s.waveRadius,Math.abs(s.waveY)+s.waveRadius,Math.abs(endX)+s.waveRadius+travel,Math.abs(endY)+s.waveRadius+travel)+s.waveWidth;
+    const unit=extent/100*Math.min(1,47/bound);
+    const core={x:s.waveX*unit,y:s.waveY*unit,radius:s.waveRadius*unit,width:Math.min(s.waveCoreWidth,s.waveRadius*.85)*unit,alpha:s.waveCoreOpacity/100};
+    const waves=Array.from({length:Math.round(s.waveCount)},(_,i)=>{
+      const age=(time/s.wavePeriod+(i+.5)/s.waveCount)%1,expansion=travel*age;
+      return {age,x:(s.waveX+dx*expansion*s.waveBias/100)*unit,y:(s.waveY+dy*expansion*s.waveBias/100)*unit,
+        radius:(s.waveRadius+expansion)*unit,width:s.waveWidth*unit,
+        alpha:s.waveOpacity/100*smooth(age/.1)*smooth((1-age)/.25)};
+    }).sort((a,b)=>b.age-a.age);
+    function point(w,theta,inner=false){
+      const taper=s.waveShape==='crescent'?Math.pow((1+Math.cos(theta-angle))/2,1.15):1;
+      const radius=Math.max(0,w.radius-(inner?w.width*taper:0));
+      return {x:w.x+Math.cos(theta)*radius,y:w.y+Math.sin(theta)*radius};
+    }
+    return {core,waves,point};
+  }
+  return {createModel,createPlasmaScene,plasmaImpulse,arcDefaults,createArcScene,waveDefaults,createWaveScene};
 });

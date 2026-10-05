@@ -31,7 +31,7 @@ dialog{width:min(460px,calc(100vw - 32px));padding:26px;background:var(--panel);
   main{flex:1;min-height:0;height:auto;overflow:hidden}
   .workspace{min-height:0;overflow:auto;overscroll-behavior-y:contain}
   .workspace>div{flex-shrink:0}
-  .canvas-wrap{flex:1 0 240px;min-height:240px}
+  .canvas-wrap{flex:1 0 200px;min-height:200px}
   .canvas-wrap>canvas{position:absolute;inset:0}
   .panel{min-height:0}
   .panel-heading,.panel-footer{flex-shrink:0}

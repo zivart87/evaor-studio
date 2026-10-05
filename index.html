@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Eva Or — Particle Studio</title>
-  <link rel="stylesheet" href="styles.css?v=54b0aae0dea7">
+  <link rel="stylesheet" href="styles.css?v=f6cbebe09367">
 </head>
 <body>
   <header class="topbar">
@@ -21,7 +21,7 @@
         <button data-preset="rays">03 <span>Лучи</span></button>
         <button data-preset="corona">04 <span>Солнечная корона</span></button>
         <button data-preset="plasma">05 <span>Плазменная сфера</span></button>
-        <button data-preset="arcs">06 <span>Световые дуги</span></button>
+        <button data-preset="arcs">06 <span>Световые дуги</span></button><button data-preset="waves">07 <span>Графические волны</span></button>
       </div>
       <div class="preview-bar">
         <div class="playback-controls" role="group" aria-label="Управление воспроизведением"><button id="pause" aria-pressed="false"><span id="playback-icon" aria-hidden="true">Ⅱ</span><span id="playback-label">Пауза</span></button></div>
@@ -39,7 +39,7 @@
       <div class="panel-heading"><h2 id="model-title">Настройки</h2><button id="reset" class="text-button" title="Сбросить выбранную модель">Сбросить</button></div>
       <div class="panel-scroll" id="panel-scroll">
         <section class="control-section" id="logo-type-options" hidden><h3>Композиция логотипа · Montserrat</h3><label class="field-label" for="logo-weight">Толщина шрифта</label><select id="logo-weight"><option value="300">Light · 300</option><option value="400" selected>Regular · 400</option><option value="500">Medium · 500</option><option value="600">Semi-Bold · 600</option><option value="700">Bold · 700</option></select><div class="control"><div class="control-label"><label for="logo-o-scale">Размер анимации O</label><output id="logo-o-scale-value" for="logo-o-scale">100 %</output></div><input id="logo-o-scale" type="range" min="25" max="200" step="1" value="100"></div><div class="control"><div class="control-label"><label for="logo-spacing">Интервалы между буквами</label><output id="logo-spacing-value" for="logo-spacing">0 %</output></div><input id="logo-spacing" type="range" min="-10" max="30" step="1" value="0"></div><p class="hint">O: 100% — высота заглавной буквы. Интервалы меняют все четыре промежутка, включая соседей O; 0% — исходные интервалы. Настройки анимации сохраняются. Крупная композиция автоматически вписывается в окно.</p></section>
-        <section class="control-section"><h3><span>01</span> Геометрия</h3><div id="geometry-controls"></div><div id="plasmaGeometry-controls" hidden></div><div id="arcGeometry-controls" hidden></div></section>
+        <section class="control-section"><h3><span>01</span> Геометрия</h3><div id="geometry-controls"></div><div id="plasmaGeometry-controls" hidden></div><div id="arcGeometry-controls" hidden></div><div id="wave-geometry" hidden><label class="field-label" for="wavePosition">Положение центрального кольца</label><select id="wavePosition"><option value="center">В центре</option><option value="br">Внизу справа</option><option value="bl">Внизу слева</option><option value="tr">Вверху справа</option><option value="tl">Вверху слева</option><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="custom">Своё положение · X / Y</option></select><div id="waveGeometry-controls"></div></div></section>
         <section class="control-section"><h3><span>02</span> <span id="motion-title" class="section-title">Движение частиц</span></h3>
           <div id="radial-options"><label class="field-label" for="direction">Направление</label>
           <div class="segmented" id="direction" role="group" aria-label="Направление движения"><button data-direction="out" aria-pressed="true">↗ Наружу</button><button data-direction="in" aria-pressed="false">↙ Внутрь</button><button data-direction="both" aria-pressed="false">↔ Оба</button></div>
@@ -49,7 +49,7 @@
           <div id="growth-options" hidden><div id="growth-controls"></div><label class="field-label" for="growthRotation">Направление вращения</label><select id="growthRotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option></select><p class="hint">Частица вращается и непрерывно удаляется от центра. «Внутрь» обращает движение радиуса, «Оба» сочетает потоки. Для точечного источника центр спирали — заданная точка.</p></div>
           <div id="vortex-options" hidden><label class="field-label" for="rotation">Направление вращения</label><select id="rotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option></select><div id="vortex-controls"></div><p class="hint">Два зернистых потока движутся по кольцу. Длина и рассеивание хвостов меняют силуэт; цвета потоков смешиваются в местах наложения.</p></div>
           <div id="plasma-options" hidden><label class="field-label" for="plasmaFlow">Движение электрических импульсов</label><select id="plasmaFlow"><option value="out">От центра к краю</option><option value="in">От края к центру</option><option value="both">В обе стороны</option><option value="off">Без движения — цельные лучи</option></select><div id="plasmaFlow-controls"></div><div id="plasmaMotion-controls"></div><label class="field-label" for="plasmaRotation">Направление вращения сферы</label><select id="plasmaRotation"><option value="cw">Прямое</option><option value="ccw">Обратное</option></select><p class="hint">Яркие импульсы бегут вдоль лучей с затухающим хвостом. В режиме «В обе стороны» часть лучей направлена к центру, часть — к краю. Мерцание каждого луча независимо. Общая скорость влияет на движение, вращение и частоту мерцания.</p></div>
-          <div id="arc-options" hidden><label class="field-label" for="arcRotation">Направление вращения</label><select id="arcRotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option><option value="both">В разные стороны</option></select><div id="arcMotion-controls"></div><p class="hint">180° — полукольца, 360° — замкнутые кольца. Нулевые смещение и волнистость дают ровные окружности. Разброс положения 0% выравнивает дуги; разница скоростей 0% синхронизирует вращение.</p></div><div id="density-controls"></div>
+          <div id="arc-options" hidden><label class="field-label" for="arcRotation">Направление вращения</label><select id="arcRotation"><option value="cw">По часовой стрелке</option><option value="ccw">Против часовой стрелки</option><option value="both">В разные стороны</option></select><div id="arcMotion-controls"></div><p class="hint">180° — полукольца, 360° — замкнутые кольца. Нулевые смещение и волнистость дают ровные окружности. Разброс положения 0% выравнивает дуги; разница скоростей 0% синхронизирует вращение.</p></div><div id="wave-options" hidden><label class="field-label" for="waveShape">Форма волн</label><select id="waveShape"><option value="crescent">Серпы с тонкими концами</option><option value="ring">Полные кольца</option></select><div id="waveMotion-controls"></div><p class="hint">Волны расширяются от центрального кольца и плавно исчезают. Направление 225° — вверх влево, как в примере. Смещение 0% даёт концентрические волны. Положение центра и направление независимы; скорость 0 останавливает движение. Масштаб композиции автоматически вписывается в окно.</p></div><div id="density-controls"></div>
           <label class="toggle-row" for="raysEnabled">Собрать частицы в лучи<input id="raysEnabled" type="checkbox"></label>
           <div id="ray-controls" hidden></div>
           <p class="hint" id="ray-hint">Лучи — потоки частиц из одних и тех же участков контура. Они работают и без следа.</p>
@@ -63,7 +63,7 @@
           <div id="lifecycle-controls"></div>
           <p class="hint" id="lifecycle-hint">Непрозрачность: 0% — невидимо, 100% — насыщенно. Размер в конце задан в процентах от начального. Кривая выше 1 дольше сохраняет начальное значение; перед исчезновением частица плавно гаснет.</p>
         </section>
-        <section class="control-section"><h3><span>04</span> <span id="light-title" class="section-title">Свет и след</span></h3><label class="toggle-row" for="trails">След за частицей<input id="trails" type="checkbox" checked></label><div id="light-controls"></div><div id="plasmaLight-controls" hidden></div><div id="arcLight-controls" hidden></div><div id="arc-particles" hidden><div id="arcParticles-controls"></div><p class="hint">Искры движутся вместе с дугами и мягко рассеиваются от контура. Установите количество 0, чтобы оставить только линии.</p></div>
+        <section class="control-section"><h3><span>04</span> <span id="light-title" class="section-title">Свет и след</span></h3><label class="toggle-row" for="trails">След за частицей<input id="trails" type="checkbox" checked></label><div id="light-controls"></div><div id="plasmaLight-controls" hidden></div><div id="arcLight-controls" hidden></div><div id="waveLight-controls" hidden></div><div id="arc-particles" hidden><div id="arcParticles-controls"></div><p class="hint">Искры движутся вместе с дугами и мягко рассеиваются от контура. Установите количество 0, чтобы оставить только линии.</p></div>
           <div class="color-row"><label for="background">Фон просмотра</label><input id="background" type="color" value="#000000"></div>
           <label class="toggle-row" for="transparent">Прозрачный фон PNG<input id="transparent" type="checkbox" checked></label>
           <p class="hint">PNG сохраняет выбранный вид в размере 2048 × 2048: отдельную анимацию или логотип EvaOr. Интерфейс не попадает в файл.</p>
@@ -90,7 +90,7 @@
     <p id="video-status" role="status" aria-live="polite">MP4 использует фон просмотра; прозрачность доступна только в PNG.</p>
     <div class="video-actions"><button id="video-cancel" hidden>Отменить запись</button><button id="video-start" class="primary">Скачать MP4</button></div>
   </dialog>
-  <script src="particle-math.js?v=62ad6e36b1ec"></script>
-  <script src="studio.js?v=11236939e627"></script>
+  <script src="particle-math.js?v=327dadd4c305"></script>
+  <script src="studio.js?v=4f6ddcbcd8c3"></script>
 </body>
 </html>

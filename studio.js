@@ -294,7 +294,7 @@
     if(siteExportBusy||!siteSnapshot)return;
     const snapshot=siteSnapshot;siteExportBusy=true;$('export-site').disabled=true;$('site-download').disabled=true;
     $('site-status').textContent='Собираем логотип и шрифт…';
-    try{const archive=await EvaOrSiteExport.create(snapshot);download(archive,'evaor-website-logo.zip');$('site-status').textContent='Готово. Распакуйте ZIP и откройте demo.html. Инструкция — в README.txt.';notice('Логотип для сайта сохранён в ZIP');}
+    try{const archive=await EvaOrSiteExport.create(snapshot);download(archive,'evaor-website-logo.zip');$('site-status').textContent='Готово. Откройте demo.html: логотип и шрифт уже встроены в этот файл. Для установки распакуйте весь ZIP.';notice('Логотип для сайта сохранён в ZIP');}
     catch(error){$('site-status').textContent='Не удалось собрать архив. Проверьте соединение и попробуйте ещё раз.';}
     finally{siteExportBusy=false;$('site-download').disabled=false;updateViewUI();}
   });

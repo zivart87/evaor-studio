@@ -225,15 +225,14 @@
     const position=wavePositions[s.wavePosition]||[s.waveX,s.waveY];
     let px=position[0]/25,py=position[1]/25;
     const norm=Math.max(1,Math.hypot(px,py));px/=norm;py/=norm;
-    // The outer silhouette is the O slot. Only the inner ring moves inside it.
+    // Invisible fixed O envelope; only the emitted waves animate.
     const radius=s.waveRadius*unit,room=Math.max(0,outerRadius-radius-unit);
     const core={x:px*room,y:py*room,radius,width:Math.min(s.waveCoreWidth,s.waveRadius*.85)*unit,alpha:s.waveCoreOpacity/100};
     const angle=Math.hypot(core.x,core.y)>.001?Math.atan2(-core.y,-core.x):0;
     const count=Math.round(s.waveCount);
-    const waves=[{age:1,x:0,y:0,radius:outerRadius,width:s.waveWidth*unit,alpha:s.waveOpacity/100}];
-    // One outer contour fixes the size; the remaining contours travel from the core to its boundary.
-    for(let i=0;i<count-1;i++){
-      const age=(time/s.wavePeriod+(i+.5)/(count-1))%1;
+    const waves=[];
+    for(let i=0;i<count;i++){
+      const age=(time/s.wavePeriod+(i+.5)/count)%1;
       waves.push({age,x:core.x*(1-age),y:core.y*(1-age),radius:radius+(outerRadius-radius)*age,width:s.waveWidth*unit,
         alpha:s.waveOpacity/100*smooth(age/.1)*smooth((1-age)/.2)});
     }

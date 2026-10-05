@@ -49,7 +49,7 @@
     if(['cw','ccw'].includes(raw.plasmaRotation)) next.plasmaRotation=raw.plasmaRotation;
     if(['cw','ccw','both'].includes(raw.arcRotation))next.arcRotation=raw.arcRotation;
     if(['ring','crescent'].includes(raw.waveShape))next.waveShape=raw.waveShape;
-    if(['center','br','bl','tr','tl','top','bottom','custom'].includes(raw.wavePosition))next.wavePosition=raw.wavePosition;
+    if(['center','br','bl','tr','tl','top','bottom','left','right','custom'].includes(raw.wavePosition))next.wavePosition=raw.wavePosition;
     if(['out','in','both','off'].includes(raw.plasmaFlow))next.plasmaFlow=raw.plasmaFlow;
     if(['base','spiral','growing'].includes(raw.trajectory)) next.trajectory=raw.trajectory;
     if(['cw','ccw'].includes(raw.growthRotation))next.growthRotation=raw.growthRotation;
@@ -58,7 +58,7 @@
     next.rayCount = Math.round(next.rayCount);
     next.plasmaCount = Math.round(next.plasmaCount);
     next.arcCount=Math.round(next.arcCount);next.arcParticles=Math.round(next.arcParticles);
-    next.waveCount=Math.round(next.waveCount);
+    next.waveCount=Math.round(next.waveCount);if(EvaOrParticles.wavePositions[next.wavePosition])[next.waveX,next.waveY]=EvaOrParticles.wavePositions[next.wavePosition];
     for (const key of ['trails','transparent','raysEnabled']) if (typeof raw[key] === 'boolean') next[key] = raw[key];
     for (const key of ['color','colorEnd','background','plasmaRimColor','plasmaCoreColor']) if (typeof raw[key] === 'string' && /^#[\da-f]{6}$/i.test(raw[key])) next[key] = raw[key];
     if (!Object.hasOwn(raw,'colorEnd')) next.colorEnd=next.color; // Version 1 single-colour presets.
@@ -195,6 +195,7 @@
     for(const key of ['wavePosition','waveShape'])$(key).value=state[key];
     showControl('radius',!waves);showControl('glow',!waves);
     if(waves){
+      for(const key of ['waveTravel','waveDirection','waveBias'])showControl(key,false);
       for(const id of ['radial-options','trajectory-options','spiral-options','growth-options','density-controls','point-controls','ray-controls','ray-hint','lifecycle-controls','lifecycle-hint','color-preview','gradient-labels'])$(id).hidden=true;
       for(const key of ['count','size','asymmetry','thickness','life','travel','swirl','trail'])showControl(key,false);
       for(const id of ['raysEnabled','trails'])$(id).closest('label').hidden=true;
@@ -438,7 +439,7 @@
   for(const key of ['source','color','colorEnd','background','trails','transparent','raysEnabled','rotation','trajectory','growthRotation','plasmaRotation','plasmaFlow','plasmaCoreColor','plasmaRimColor','arcRotation','waveShape']) $(key).addEventListener('input',()=>{state[key]=$(key).type==='checkbox'?$(key).checked:$(key).value;changed();});
   $('wavePosition').addEventListener('input',()=>{
     state.wavePosition=$('wavePosition').value;
-    const positions={center:[0,0],br:[12,12],bl:[-12,12],tr:[12,-12],tl:[-12,-12],top:[0,-12],bottom:[0,12]};
+    const positions=EvaOrParticles.wavePositions;
     if(positions[state.wavePosition])[state.waveX,state.waveY]=positions[state.wavePosition];
     changed();
   });

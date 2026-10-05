@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Eva Or — Particle Studio</title>
-  <link rel="stylesheet" href="styles.css?v=f6cbebe09367">
+  <link rel="stylesheet" href="styles.css?v=1d19a8330a93">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="./index.html" aria-label="Eva Or — главная">eva<span class="brand-or">or</span><span class="brand-dot">•</span></a>
     <nav class="library-nav" aria-label="Разделы студии"><button id="editor-tab" aria-pressed="true">Редактор</button><button id="library-tab" aria-pressed="false">Сохранённые <span id="library-count">0</span></button></nav>
-    <div class="export-actions"><button id="save-variant">Сохранить вариант</button><button id="export">Экспорт PNG <span>↗</span></button><button id="export-video" class="primary">Экспорт видео <span>↗</span></button></div>
+    <div class="export-actions"><button id="save-variant">Сохранить вариант</button><button id="export">Экспорт PNG <span>↗</span></button><button id="export-site">Экспорт для сайта <span>↗</span></button><button id="export-video" class="primary">Экспорт видео <span>↗</span></button></div>
   </header>
   <main id="editor-screen">
     <section class="workspace" aria-label="Просмотр логотипа">
@@ -81,6 +81,17 @@
   </section>
   <div class="toast" id="toast" role="status"></div>
   <dialog id="variant-dialog" aria-labelledby="variant-dialog-title"><form id="variant-form"><div class="video-heading"><h2 id="variant-dialog-title">Сохранить вариант</h2><button id="variant-close" type="button" aria-label="Закрыть сохранение">×</button></div><p class="hint">Сохраняются все параметры, вид просмотра, шрифт, размер O, интервалы и текущая фаза анимации.</p><label class="field-label" for="variant-name">Название варианта</label><input id="variant-name" type="text" maxlength="80" required autocomplete="off"><p id="variant-error" role="status"></p><div class="video-actions"><button id="variant-submit" type="submit" class="primary">Сохранить</button></div></form></dialog>
+  <dialog id="site-dialog" aria-labelledby="site-title">
+    <div class="video-heading"><h2 id="site-title">Логотип для сайта</h2><button id="site-close" aria-label="Закрыть экспорт для сайта">×</button></div>
+    <p class="video-description">Текущая анимация станет буквой O в логотипе EvaOr. Montserrat, толщина шрифта, размер O и интервалы сохраняются.</p>
+    <div id="site-preview-wrap"><canvas id="site-preview" aria-label="Предпросмотр логотипа в хедере" role="img"></canvas></div>
+    <p id="site-summary" class="hint"></p>
+    <p class="hint">ZIP содержит готовый JavaScript со встроенным шрифтом, пример хедера, код вставки, инструкцию и копию настроек. Фон логотипа прозрачный. Пауза редактора не останавливает анимацию на сайте.</p>
+    <label class="field-label" for="site-snippet">Код для хедера после загрузки файла на сайт</label>
+    <textarea id="site-snippet" readonly rows="5" spellcheck="false"></textarea>
+    <p id="site-status" role="status" aria-live="polite"></p>
+    <div class="video-actions"><button id="site-copy">Копировать код</button><button id="site-download" class="primary">Скачать ZIP</button></div>
+  </dialog>
   <dialog id="video-dialog" aria-labelledby="video-title">
     <div class="video-heading"><h2 id="video-title">Экспорт видео · MP4</h2><button id="video-close" aria-label="Закрыть экспорт видео">×</button></div>
     <p class="video-description" id="video-description">Выбранный вид без интерфейса. Квадратное видео 1080 × 1080, без звука, с выбранным фоном.</p>
@@ -91,6 +102,8 @@
     <div class="video-actions"><button id="video-cancel" hidden>Отменить запись</button><button id="video-start" class="primary">Скачать MP4</button></div>
   </dialog>
   <script src="particle-math.js?v=b06b04d53680"></script>
-  <script src="studio.js?v=3f04d66ccf25"></script>
+  <script src="logo-renderer.js?v=a345e88bd298"></script>
+  <script src="site-export.js?v=30b8d2f3c42e"></script>
+  <script src="studio.js?v=08e781e4740d"></script>
 </body>
 </html>

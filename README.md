@@ -8,6 +8,7 @@ Interactive light and particle editor for the EvaOr logo. Built with browser Can
 - EvaOr logo preview with animated O, Montserrat weights, O scaling and letter spacing.
 - Named variants with a preview gallery, restoreable trash and JSON import/export.
 - PNG and browser-supported MP4 export.
+- Downloadable website logo with bundled font, header demo and installation guide.
 
 Saved variants remain in each visitor's browser; JSON files can be used to transfer or back up settings. Clearing website data removes local saves.
 

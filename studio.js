@@ -265,15 +265,25 @@
   function download(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
   function captureVariant(){return {version:4,settings:{...state},composition:{view:viewMode,weight:logoWeight,layout:{...logoLayout}},playback:{time,paused}};}
   let siteSnapshot=null;
+  function paintSitePreview(){
+    if(!siteSnapshot||!$('site-dialog').open)return;
+    const preview=$('site-preview'),w=preview.clientWidth,h=preview.clientHeight;
+    if(!w||!h)return;
+    const scale=Math.min(devicePixelRatio||1,3),out=preview.getContext('2d');
+    preview.width=Math.round(w*scale);preview.height=Math.round(h*scale);
+    out.setTransform(scale,0,0,scale,0,0);
+    const {settings,composition,playback}=siteSnapshot;
+    EvaOrRenderer.renderScene(out,w,h,settings,makeParticles(settings.count),playback.time,0,'logo',composition.weight,composition.layout,{header:true});
+  }
+  new ResizeObserver(paintSitePreview).observe($('site-preview-wrap'));
   $('export-site').addEventListener('click',()=>{
     siteSnapshot=captureVariant();
     $('site-snippet').value=EvaOrSiteExport.snippet;
     $('site-summary').textContent=`${modelNames[state.model]} · Montserrat ${logoWeight} · O ${logoLayout.oScale}% · интервалы ${logoLayout.spacing}%`;
     $('site-status').textContent='Загрузите JS на сайт и вставьте код в хедер. В архиве есть пример для просмотра.';
     $('site-preview-wrap').style.backgroundColor=state.background;
-    const preview=$('site-preview');preview.width=1000;preview.height=280;
-    EvaOrRenderer.renderScene(preview.getContext('2d'),1000,280,state,particles,time,0,'logo',logoWeight,logoLayout,{header:true});
     $('site-dialog').showModal();
+    paintSitePreview();
   });
   $('site-close').addEventListener('click',()=>$('site-dialog').close());
   $('site-copy').addEventListener('click',async()=>{
